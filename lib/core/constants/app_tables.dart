@@ -1,5 +1,5 @@
 class AppTables {
-  static const String prefix = 'idadayati_';
+  static const String prefix = 'taleb_';
 
   static const String schools = '${prefix}schools';
   static const String schoolTeachers = '${prefix}school_teachers';

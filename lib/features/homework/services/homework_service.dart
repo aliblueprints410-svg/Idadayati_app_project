@@ -549,51 +549,147 @@ class HomeworkService {
       }
     } catch (_) {}
 
-    // Auto-provision 27 vocational classes across 9 departments for Idadayati
-    final List<String> vocationalDepartments = [
-      'ميكانيك',
-      'أمن سيبراني',
-      'نجارة',
-      'بناء',
-      'حاسوب',
-      'تكييف',
-      'تكرير نفط',
-      'لحام',
-      'بتروكيمياوي',
-    ];
+    // Check school type from taleb_schools
+    String schoolType = 'vocational';
+    try {
+      final sRow = await _supabase
+          .from(AppTables.schools)
+          .select('school_type, stage, name')
+          .eq('id', cleanSchoolId)
+          .maybeSingle();
+      if (sRow != null) {
+        final rawType = (sRow['school_type'] ?? sRow['stage'])?.toString().toLowerCase() ?? '';
+        final sName = sRow['name']?.toString() ?? '';
+        if (rawType.isNotEmpty) {
+          schoolType = rawType;
+        } else if (sName.contains('متوسط')) {
+          schoolType = 'middle';
+        } else if (sName.contains('ابتدائ')) {
+          schoolType = 'primary';
+        } else if (sName.contains('إعداد') || sName.contains('اعداد') || sName.contains('متميز')) {
+          schoolType = 'academic';
+        }
+      }
+    } catch (_) {}
 
     const uuid = Uuid();
-    final List<SchoolClass> vocationalClasses = [];
-    final List<Map<String, dynamic>> toInsertVocational = [];
+    final List<SchoolClass> generatedClasses = [];
+    final List<Map<String, dynamic>> toInsert = [];
     int orderCounter = 1;
 
-    for (final dept in vocationalDepartments) {
-      final stages = ['الأول مهني', 'الثاني مهني', 'الثالث مهني'];
-      for (int s = 0; s < stages.length; s++) {
-        final className = '${stages[s]} - $dept';
-        final cId = uuid.v5(Namespace.url.value, 'idadayati_class_${cleanSchoolId}_$orderCounter');
-        final schoolClass = SchoolClass(
+    if (schoolType == 'primary') {
+      final primaryNames = [
+        'الأول الابتدائي',
+        'الثاني الابتدائي',
+        'الثالث الابتدائي',
+        'الرابع الابتدائي',
+        'الخامس الابتدائي',
+        'السادس الابتدائي (بكالوريا)',
+      ];
+      for (final pName in primaryNames) {
+        final cId = uuid.v5(Namespace.url.value, 'taleb_class_${cleanSchoolId}_$orderCounter');
+        generatedClasses.add(SchoolClass(
           id: cId,
           schoolId: cleanSchoolId,
-          name: className,
+          name: pName,
           order: orderCounter,
-        );
-        vocationalClasses.add(schoolClass);
-        toInsertVocational.add({
+        ));
+        toInsert.add({
           'id': cId,
           'school_id': cleanSchoolId,
-          'name': className,
+          'name': pName,
           'order': orderCounter,
         });
         orderCounter++;
       }
+    } else if (schoolType == 'middle') {
+      final middleNames = [
+        'الأول المتوسط',
+        'الثاني المتوسط',
+        'الثالث المتوسط (وزاري)',
+      ];
+      for (final mName in middleNames) {
+        final cId = uuid.v5(Namespace.url.value, 'taleb_class_${cleanSchoolId}_$orderCounter');
+        generatedClasses.add(SchoolClass(
+          id: cId,
+          schoolId: cleanSchoolId,
+          name: mName,
+          order: orderCounter,
+        ));
+        toInsert.add({
+          'id': cId,
+          'school_id': cleanSchoolId,
+          'name': mName,
+          'order': orderCounter,
+        });
+        orderCounter++;
+      }
+    } else if (schoolType == 'academic') {
+      final academicNames = [
+        'الرابع العلمي',
+        'الرابع الأدبي',
+        'الخامس العلمي',
+        'الخامس الأدبي',
+        'السادس العلمي (وزاري)',
+        'السادس الأدبي (وزاري)',
+      ];
+      for (final aName in academicNames) {
+        final cId = uuid.v5(Namespace.url.value, 'taleb_class_${cleanSchoolId}_$orderCounter');
+        generatedClasses.add(SchoolClass(
+          id: cId,
+          schoolId: cleanSchoolId,
+          name: aName,
+          order: orderCounter,
+        ));
+        toInsert.add({
+          'id': cId,
+          'school_id': cleanSchoolId,
+          'name': aName,
+          'order': orderCounter,
+        });
+        orderCounter++;
+      }
+    } else {
+      // Auto-provision 27 vocational classes across 9 departments for Vocational Schools
+      final List<String> vocationalDepartments = [
+        'ميكانيك',
+        'أمن سيبراني',
+        'نجارة',
+        'بناء',
+        'حاسوب',
+        'تكييف',
+        'تكرير نفط',
+        'لحام',
+        'بتروكيمياوي',
+      ];
+
+      for (final dept in vocationalDepartments) {
+        final stages = ['الأول مهني', 'الثاني مهني', 'الثالث مهني'];
+        for (int s = 0; s < stages.length; s++) {
+          final className = '${stages[s]} - $dept';
+          final cId = uuid.v5(Namespace.url.value, 'taleb_class_${cleanSchoolId}_$orderCounter');
+          generatedClasses.add(SchoolClass(
+            id: cId,
+            schoolId: cleanSchoolId,
+            name: className,
+            order: orderCounter,
+          ));
+          toInsert.add({
+            'id': cId,
+            'school_id': cleanSchoolId,
+            'name': className,
+            'order': orderCounter,
+          });
+          orderCounter++;
+        }
+      }
     }
 
     try {
-      await _supabase.from(AppTables.classes).insert(toInsertVocational);
+      await _supabase.from(AppTables.classes).insert(toInsert);
     } catch (_) {}
 
-    return vocationalClasses;
+    return generatedClasses;
   }
 
   // Get subjects for a specific class (with monotonic revision comparison between local & cloud)

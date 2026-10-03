@@ -96,7 +96,8 @@ class _GradeSelectionScreenState extends ConsumerState<GradeSelectionScreen> {
     final schoolName = activeSchool?.name ?? localStorage.getSchoolName() ?? AppConstants.kirkukVocSchoolName;
     final hPadding = Responsive.getHorizontalPadding(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isLockedToDepartment = widget.departmentFilter != null && widget.departmentFilter!.isNotEmpty;
+    final isVocational = activeSchool?.isVocational ?? (schoolName.contains('مهن') || schoolName.contains('صناع'));
+    final isLockedToDepartment = isVocational && widget.departmentFilter != null && widget.departmentFilter!.isNotEmpty;
     final currentDepartment = isLockedToDepartment ? widget.departmentFilter! : _selectedDepartment;
 
     if (schoolId == null) {
@@ -118,11 +119,15 @@ class _GradeSelectionScreenState extends ConsumerState<GradeSelectionScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              isLockedToDepartment ? 'تغيير الصف' : 'اختيار القسم والمرحلة',
+              isLockedToDepartment
+                  ? 'تغيير المرحلة'
+                  : (isVocational ? 'اختيار القسم والمرحلة' : 'اختيار الصف الدراسي'),
               style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17, color: isDark ? Colors.white : AppColors.primary),
             ),
             Text(
-              isLockedToDepartment ? currentDepartment : (schoolName.isNotEmpty ? schoolName : ''),
+              isLockedToDepartment
+                  ? currentDepartment
+                  : (schoolName.isNotEmpty ? '$schoolName • ${activeSchool?.typeLabel ?? ""}' : ''),
               style: const TextStyle(fontSize: 12, color: AppColors.gold, fontWeight: FontWeight.bold),
             ),
           ],
@@ -183,7 +188,7 @@ class _GradeSelectionScreenState extends ConsumerState<GradeSelectionScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                isLockedToDepartment ? 'تغيير المرحلة الدراسية ✨' : 'مرحباً بك في إعداديتي ✨',
+                                isLockedToDepartment ? 'تغيير المرحلة الدراسية ✨' : 'مرحباً بك في تطبيق طالب ✨',
                                 style: TextStyle(
                                   color: isDark ? Colors.white : AppColors.primary,
                                   fontSize: 17,
@@ -192,9 +197,11 @@ class _GradeSelectionScreenState extends ConsumerState<GradeSelectionScreen> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                isLockedToDepartment
-                                    ? 'قسم: $currentDepartment • اختر مرحلتك لعرض المواد'
-                                    : 'حدد قسمك وتخصصك المهني لعرض المواد والجداول والواجبات',
+                                isVocational
+                                    ? (isLockedToDepartment
+                                        ? 'قسم: $currentDepartment • اختر مرحلتك لعرض المواد'
+                                        : 'حدد قسمك وتخصصك المهني لعرض المواد والجداول والواجبات')
+                                    : 'اختر صفك الدراسي لعرض المواد والواجبات والجدول الأسبوعي',
                                 style: TextStyle(
                                   color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
                                   fontSize: 12,
@@ -247,8 +254,8 @@ class _GradeSelectionScreenState extends ConsumerState<GradeSelectionScreen> {
                   ),
                 ),
 
-                // Horizontal Department Filter Chips (Shown only when departments selection is enabled and not locked)
-                if (widget.showDepartments && !isLockedToDepartment)
+                // Horizontal Department Filter Chips (Shown only for Vocational schools)
+                if (isVocational && widget.showDepartments && !isLockedToDepartment)
                   SizedBox(
                     height: 48,
                     child: ListView.builder(
@@ -302,9 +309,10 @@ class _GradeSelectionScreenState extends ConsumerState<GradeSelectionScreen> {
                 Expanded(
                   child: classesAsync.when(
                     data: (classes) {
-                      // Filter by selected department and search query
+                      // Filter by department (if vocational) and search query
                       final filtered = classes.where((c) {
-                        final matchesDept = currentDepartment.isEmpty ||
+                        final matchesDept = !isVocational ||
+                            currentDepartment.isEmpty ||
                             c.name.contains(currentDepartment) ||
                             currentDepartment.contains(c.name.replaceAll('الأول مهني - ', '').replaceAll('الثاني مهني - ', '').replaceAll('الثالث مهني - ', ''));
 
