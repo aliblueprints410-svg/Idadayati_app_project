@@ -97,6 +97,9 @@ class _GradeSelectionScreenState extends ConsumerState<GradeSelectionScreen> {
     final hPadding = Responsive.getHorizontalPadding(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isVocational = activeSchool?.isVocational ?? (schoolName.contains('مهن') || schoolName.contains('صناع'));
+    final isPrimarySchool = activeSchool?.isPrimary == true || schoolName.contains('ابتدائ');
+    final isMiddleSchool = activeSchool?.isMiddle == true || schoolName.contains('متوسط');
+    final isAcademicSchool = activeSchool?.isAcademic == true || (!isVocational && !isPrimarySchool && !isMiddleSchool);
     final isLockedToDepartment = isVocational && widget.departmentFilter != null && widget.departmentFilter!.isNotEmpty;
     final currentDepartment = isLockedToDepartment ? widget.departmentFilter! : _selectedDepartment;
 
@@ -188,7 +191,7 @@ class _GradeSelectionScreenState extends ConsumerState<GradeSelectionScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                isLockedToDepartment ? 'تغيير المرحلة الدراسية ✨' : 'مرحباً بك في تطبيق طالب ✨',
+                                isLockedToDepartment ? 'تغيير المرحلة الدراسية ✨' : 'مرحباً بك في تطبيق ${AppConstants.appName} ✨',
                                 style: TextStyle(
                                   color: isDark ? Colors.white : AppColors.primary,
                                   fontSize: 17,
@@ -223,7 +226,15 @@ class _GradeSelectionScreenState extends ConsumerState<GradeSelectionScreen> {
                     controller: _searchController,
                     onChanged: (val) => setState(() => _searchQuery = val.trim()),
                     decoration: InputDecoration(
-                      hintText: 'ابحث عن قسم أو صف (مثال: كهرباء، ثالث مهني)...',
+                      hintText: isVocational
+                          ? 'ابحث عن قسم أو صف (مثال: كهرباء، ثالث مهني)...'
+                          : (isPrimarySchool
+                              ? 'ابحث عن صف دراسي (مثال: السادس الابتدائي)...'
+                              : (isMiddleSchool
+                                  ? 'ابحث عن صف دراسي (مثال: الثالث متوسط)...'
+                                  : (isAcademicSchool
+                                      ? 'ابحث عن صف دراسي (مثال: السادس علمي / أدبي)...'
+                                      : 'ابحث عن صف دراسي...'))),
                       hintStyle: const TextStyle(fontSize: 13, color: AppColors.textMuted),
                       prefixIcon: const Icon(Icons.search_rounded, color: AppColors.primary),
                       suffixIcon: _searchQuery.isNotEmpty
@@ -322,7 +333,26 @@ class _GradeSelectionScreenState extends ConsumerState<GradeSelectionScreen> {
                         return matchesDept && matchesSearch;
                       }).toList();
 
-                      if (filtered.isEmpty) {
+                      // تنقية القائمة لمنع تكرار أي صف مطلقاً
+                      final seenClassKeys = <String>{};
+                      final List<SchoolClass> dedupedFiltered = [];
+                      for (final c in filtered) {
+                        final cleanKey = c.name
+                            .replaceAll('(وزاري)', '')
+                            .replaceAll('(بكالوريا)', '')
+                            .replaceAll('  ', ' ')
+                            .trim();
+                        if (!seenClassKeys.contains(cleanKey) || c.name.contains('وزاري') || c.name.contains('بكالوريا')) {
+                          if (seenClassKeys.contains(cleanKey)) {
+                            dedupedFiltered.removeWhere((item) =>
+                                item.name.replaceAll('(وزاري)', '').replaceAll('(بكالوريا)', '').trim() == cleanKey);
+                          }
+                          seenClassKeys.add(cleanKey);
+                          dedupedFiltered.add(c);
+                        }
+                      }
+
+                      if (dedupedFiltered.isEmpty) {
                         return Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -352,11 +382,31 @@ class _GradeSelectionScreenState extends ConsumerState<GradeSelectionScreen> {
                       return AnimationLimiter(
                         child: ListView.builder(
                           padding: EdgeInsets.symmetric(horizontal: hPadding, vertical: 8.0),
-                          itemCount: filtered.length,
+                          itemCount: dedupedFiltered.length,
                           itemBuilder: (context, index) {
-                            final schoolClass = filtered[index];
-                            final isGrade12 = schoolClass.name.contains('ثالث');
-                            final isGrade11 = schoolClass.name.contains('ثاني');
+                            final schoolClass = dedupedFiltered[index];
+                            final nameLower = schoolClass.name.toLowerCase();
+
+                            bool isMinisterial = false;
+                            String ministerialBadge = 'وزاري';
+
+                            if (isPrimarySchool) {
+                              // في الابتدائية: السادس الابتدائي فقط هو البكالوريا الوزاري
+                              isMinisterial = nameLower.contains('سادس') || nameLower.contains('6') || nameLower.contains('بكالوريا');
+                              ministerialBadge = 'بكالوريا وزاري';
+                            } else if (isMiddleSchool) {
+                              // في المتوسطة: الثالث المتوسط فقط هو الوزاري
+                              isMinisterial = nameLower.contains('ثالث') || nameLower.contains('3');
+                              ministerialBadge = 'وزاري';
+                            } else if (isAcademicSchool) {
+                              // في الإعدادي الأكاديمي: السادس الإعدادي فقط هو الوزاري
+                              isMinisterial = nameLower.contains('سادس') || nameLower.contains('6');
+                              ministerialBadge = 'وزاري';
+                            } else {
+                              // في التعليم المهني: الثالث مهني فقط هو الوزاري
+                              isMinisterial = nameLower.contains('ثالث') || nameLower.contains('3');
+                              ministerialBadge = 'وزاري';
+                            }
 
                             return AnimationConfiguration.staggeredList(
                               position: index,
@@ -370,10 +420,10 @@ class _GradeSelectionScreenState extends ConsumerState<GradeSelectionScreen> {
                                       color: Colors.white,
                                       borderRadius: BorderRadius.circular(18),
                                       border: Border.all(
-                                        color: isGrade12
+                                        color: isMinisterial
                                             ? AppColors.borderGold
                                             : AppColors.border,
-                                        width: isGrade12 ? 1.5 : 1.0,
+                                        width: isMinisterial ? 1.5 : 1.0,
                                       ),
                                       boxShadow: [
                                         BoxShadow(
@@ -381,7 +431,7 @@ class _GradeSelectionScreenState extends ConsumerState<GradeSelectionScreen> {
                                           blurRadius: 10,
                                           offset: const Offset(0, 4),
                                         ),
-                                        if (isGrade12)
+                                        if (isMinisterial)
                                           BoxShadow(
                                             color: AppColors.gold.withValues(alpha: 0.06),
                                             blurRadius: 8,
@@ -403,21 +453,21 @@ class _GradeSelectionScreenState extends ConsumerState<GradeSelectionScreen> {
                                                 width: 50,
                                                 height: 50,
                                                 decoration: BoxDecoration(
-                                                  color: isGrade12
+                                                  color: isMinisterial
                                                       ? AppColors.goldSurface
-                                                      : (isGrade11 ? AppColors.blueSurface : AppColors.surfaceMuted),
+                                                      : AppColors.blueSurface,
                                                   borderRadius: BorderRadius.circular(14),
                                                   border: Border.all(
-                                                    color: isGrade12
+                                                    color: isMinisterial
                                                         ? AppColors.gold.withValues(alpha: 0.4)
                                                         : AppColors.primary.withValues(alpha: 0.2),
                                                   ),
                                                 ),
                                                 child: Icon(
-                                                  isGrade12
+                                                  isMinisterial
                                                       ? Icons.military_tech_rounded
-                                                      : (isGrade11 ? Icons.edit_rounded : Icons.school_rounded),
-                                                  color: isGrade12 ? AppColors.gold : AppColors.primary,
+                                                      : Icons.school_rounded,
+                                                  color: isMinisterial ? AppColors.gold : AppColors.primary,
                                                   size: 26,
                                                 ),
                                               ),
@@ -438,7 +488,7 @@ class _GradeSelectionScreenState extends ConsumerState<GradeSelectionScreen> {
                                                             ),
                                                           ),
                                                         ),
-                                                        if (isGrade12)
+                                                        if (isMinisterial)
                                                           Container(
                                                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                                             decoration: BoxDecoration(
@@ -446,9 +496,9 @@ class _GradeSelectionScreenState extends ConsumerState<GradeSelectionScreen> {
                                                               borderRadius: BorderRadius.circular(8),
                                                               border: Border.all(color: AppColors.gold),
                                                             ),
-                                                            child: const Text(
-                                                              'وزاري',
-                                                              style: TextStyle(
+                                                            child: Text(
+                                                              ministerialBadge,
+                                                              style: const TextStyle(
                                                                 fontSize: 11,
                                                                 fontWeight: FontWeight.bold,
                                                                 color: AppColors.goldDark,
