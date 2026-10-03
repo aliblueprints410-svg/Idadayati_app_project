@@ -1,0 +1,588 @@
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:uuid/uuid.dart';
+import 'package:path_provider/path_provider.dart';
+import '../../../core/constants/app_constants.dart';
+import '../../../core/providers/core_providers.dart';
+import '../../../core/services/notification_service.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/arabic_day_helper.dart';
+import '../../homework/models/homework.dart';
+import '../../homework/providers/homework_providers.dart';
+
+class AddHomeworkScreen extends ConsumerStatefulWidget {
+  const AddHomeworkScreen({super.key});
+
+  @override
+  ConsumerState<AddHomeworkScreen> createState() => _AddHomeworkScreenState();
+}
+
+class _AddHomeworkScreenState extends ConsumerState<AddHomeworkScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _titleController = TextEditingController();
+  final _descController = TextEditingController();
+
+  String? _selectedClassId;
+  String? _selectedSubjectId;
+  File? _imageFile;
+  DateTime? _deadline;
+  bool _isEveningShift = false; // false = صباحي, true = مسائي
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: source);
+
+    if (pickedFile != null) {
+      final dir = await getTemporaryDirectory();
+      final targetPath = '${dir.path}/${const Uuid().v4()}.jpg';
+
+      final compressedImage = await FlutterImageCompress.compressAndGetFile(
+        pickedFile.path,
+        targetPath,
+        quality: 70,
+        minWidth: 1024,
+        minHeight: 1024,
+      );
+
+      if (compressedImage != null) {
+        setState(() => _imageFile = File(compressedImage.path));
+      }
+    }
+  }
+
+  void _setShift(bool isEvening) {
+    setState(() {
+      _isEveningShift = isEvening;
+      final base = _deadline ?? DateTime.now().add(const Duration(days: 1));
+      _deadline = DateTime(
+        base.year,
+        base.month,
+        base.day,
+        _isEveningShift ? 20 : 9,
+        0,
+      );
+    });
+  }
+
+  Future<void> _selectDeadline() async {
+    final initialDate = _deadline ?? DateTime.now().add(const Duration(days: 1));
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: initialDate.isBefore(DateTime.now()) ? DateTime.now() : initialDate,
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 60)),
+      helpText: 'اختر تاريخ ويوم الواجب',
+      confirmText: 'تأكيد التاريخ',
+      cancelText: 'إلغاء',
+    );
+
+    if (pickedDate != null && mounted) {
+      setState(() {
+        _deadline = DateTime(
+          pickedDate.year,
+          pickedDate.month,
+          pickedDate.day,
+          _isEveningShift ? 20 : 9,
+          0,
+        );
+      });
+    }
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate() || _selectedClassId == null || _selectedSubjectId == null || _deadline == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.info_outline, color: Colors.white),
+              SizedBox(width: 8),
+              Text('يرجى اختيار الصف والمادة، وتحديد موعد التسليم'),
+            ],
+          ),
+          backgroundColor: AppColors.warning,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final supabase = ref.read(supabaseClientProvider);
+      String? imageUrl;
+
+      bool imageUploadFailed = false;
+      // Upload Image if exists to Supabase storage (with automatic Base64 fallback)
+      if (_imageFile != null) {
+        final fileExt = _imageFile!.path.split('.').last;
+        final fileName = '${const Uuid().v4()}.$fileExt';
+        final filePath = 'homework_images/$fileName';
+
+        try {
+          await supabase.storage.from('school_assets').upload(filePath, _imageFile!);
+          imageUrl = supabase.storage.from('school_assets').getPublicUrl(filePath);
+        } catch (e) {
+          debugPrint('[AddHomework] Storage fallback to inline base64: $e');
+          try {
+            final bytes = await _imageFile!.readAsBytes();
+            imageUrl = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+          } catch (_) {
+            imageUploadFailed = true;
+          }
+        }
+      }
+
+      final newHomework = Homework(
+        id: const Uuid().v4(),
+        subjectId: _selectedSubjectId!,
+        title: _titleController.text.trim(),
+        description: _descController.text.trim(),
+        imageUrl: imageUrl,
+        createdAt: DateTime.now(),
+        deadline: _deadline,
+        isCurrent: true,
+        isDeleted: false,
+      );
+
+      await ref.read(homeworkServiceProvider).addHomework(newHomework);
+
+      // Send Push Notification to students of this class ONLY
+      try {
+        final localStorage = ref.read(localStorageServiceProvider);
+        final schoolId = AppConstants.sanitizeSchoolId(localStorage.getSchoolCode());
+        final pushSuccess = await ref.read(notificationServiceProvider).sendPushNotification(
+          schoolCode: schoolId,
+          classId: _selectedClassId,
+          title: '📚 واجب مدرسي جديد: ${_titleController.text.trim()}',
+          message: _descController.text.trim().isNotEmpty
+              ? _descController.text.trim()
+              : 'تمت إضافة تحضير/واجب جديد لصفكم الدراسي، يرجى مراجعته والتأكد من إنجازه.',
+          additionalData: {
+            'type': 'homework',
+            'class_id': _selectedClassId,
+            'subject_id': _selectedSubjectId,
+          },
+        );
+        debugPrint('[AddHomeworkScreen] Push notification dispatched. Success: $pushSuccess');
+      } catch (e) {
+        debugPrint('[AddHomeworkScreen] Error sending push notification: $e');
+      }
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle_rounded, color: Colors.white),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  imageUploadFailed
+                      ? 'تم نشر الواجب بنجاح (ملاحظة: تعذر إرفاق الصورة لعدم تفعيل Storage في Supabase)'
+                      : 'تم نشر التحضير بنجاح',
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: imageUploadFailed ? AppColors.warning : AppColors.success,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('خطأ أثناء النشر: $e'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final schoolId = AppConstants.sanitizeSchoolId(ref.watch(localStorageServiceProvider).getSchoolCode());
+    final classesAsync = ref.watch(classesProvider(schoolId));
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('إضافة تحضير جديد'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 580),
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const Text(
+                          'الصف والمادة الدراسية',
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 10),
+
+                        // Class Selection
+                        classesAsync.when(
+                          data: (classes) {
+                            return DropdownButtonFormField<String>(
+                              decoration: const InputDecoration(
+                                labelText: 'اختر الصف',
+                                prefixIcon: Icon(Icons.school_rounded),
+                              ),
+                              initialValue: _selectedClassId,
+                              items: classes
+                                  .map((c) => DropdownMenuItem(value: c.id, child: Text(c.name)))
+                                  .toList(),
+                              onChanged: (val) {
+                                setState(() {
+                                  _selectedClassId = val;
+                                  _selectedSubjectId = null;
+                                });
+                              },
+                            );
+                          },
+                          loading: () => const LinearProgressIndicator(),
+                          error: (e, _) => Text('خطأ في جلب الصفوف: $e'),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Subject Selection
+                        if (_selectedClassId != null)
+                          Consumer(
+                            builder: (context, ref, child) {
+                              final subjectsAsync = ref.watch(subjectsProvider(_selectedClassId!));
+                              return subjectsAsync.when(
+                                data: (subjects) {
+                                  return DropdownButtonFormField<String>(
+                                    decoration: const InputDecoration(
+                                      labelText: 'اختر المادة',
+                                      prefixIcon: Icon(Icons.menu_book_rounded),
+                                    ),
+                                    initialValue: _selectedSubjectId,
+                                    items: subjects
+                                        .map((s) => DropdownMenuItem(value: s.id, child: Text(s.name)))
+                                        .toList(),
+                                    onChanged: (val) => setState(() => _selectedSubjectId = val),
+                                  );
+                                },
+                                loading: () => const LinearProgressIndicator(),
+                                error: (e, _) => Text('خطأ في جلب المواد: $e'),
+                              );
+                            },
+                          ),
+                        const SizedBox(height: 24),
+
+                        const Text(
+                          'بيانات التحضير والواجب',
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 10),
+
+                        TextFormField(
+                          controller: _titleController,
+                          decoration: const InputDecoration(
+                            labelText: 'عنوان التحضير (مثال: حل تمارين صفحة 24)',
+                            prefixIcon: Icon(Icons.title_rounded),
+                          ),
+                          validator: (val) => val == null || val.trim().isEmpty ? 'يرجى كتابة عنوان التحضير' : null,
+                        ),
+                        const SizedBox(height: 16),
+
+                        TextFormField(
+                          controller: _descController,
+                          maxLines: 4,
+                          decoration: const InputDecoration(
+                            labelText: 'تفاصيل الواجب والملاحظات للطلاب...',
+                          ),
+                          validator: (val) => val == null || val.trim().isEmpty ? 'يرجى كتابة تفاصيل الواجب' : null,
+                        ),
+                        const SizedBox(height: 20),
+
+                        // Deadline Section (Day + Date + Morning/Evening Shift)
+                        const Text(
+                          'تاريخ ويوم الواجب والدوام (صباحي / مسائي)',
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 10),
+                        Container(
+                          decoration: BoxDecoration(
+                            color: isDark ? AppColors.darkCard : Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              ListTile(
+                                leading: const Icon(Icons.calendar_today_rounded, color: AppColors.secondary),
+                                title: Text(
+                                  _deadline != null
+                                      ? ArabicDayHelper.formatFullDayDateTime(_deadline!)
+                                      : 'اختر يوم وتاريخ الواجب (صباحي أو مسائي)',
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                ),
+                                subtitle: const Text(
+                                  'اضغط لاختيار التاريخ واليوم من التقويم',
+                                  style: TextStyle(fontSize: 11),
+                                ),
+                                trailing: Icon(
+                                  _isEveningShift ? Icons.nights_stay_rounded : Icons.wb_sunny_rounded,
+                                  color: Colors.amber,
+                                ),
+                                onTap: _selectDeadline,
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+                                child: SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  child: Row(
+                                    children: ArabicDayHelper.schoolDays.map((day) {
+                                      final isSelected = _deadline?.weekday == day.weekday;
+                                      return Padding(
+                                        padding: const EdgeInsets.only(left: 8.0),
+                                        child: ChoiceChip(
+                                          label: Text(
+                                            day.shortName,
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold,
+                                              color: isSelected
+                                                  ? Colors.white
+                                                  : (isDark ? Colors.white70 : Colors.black87),
+                                            ),
+                                          ),
+                                          selected: isSelected,
+                                          selectedColor: AppColors.primary,
+                                          backgroundColor: isDark ? AppColors.darkSurface : Colors.grey.shade100,
+                                          onSelected: (_) {
+                                            setState(() {
+                                              _deadline = ArabicDayHelper.nextDateForWeekday(
+                                                day.weekday,
+                                                hour: _isEveningShift ? 20 : 9,
+                                                minute: 0,
+                                              );
+                                            });
+                                          },
+                                        ),
+                                      );
+                                    }).toList(),
+                                  ),
+                                ),
+                              ),
+                              // Shift Selector: صباحي vs مسائي
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: InkWell(
+                                        borderRadius: BorderRadius.circular(12),
+                                        onTap: () => _setShift(false),
+                                        child: AnimatedContainer(
+                                          duration: const Duration(milliseconds: 200),
+                                          padding: const EdgeInsets.symmetric(vertical: 10),
+                                          decoration: BoxDecoration(
+                                            color: !_isEveningShift
+                                                ? AppColors.primary
+                                                : (isDark ? AppColors.darkSurface : Colors.grey.shade100),
+                                            borderRadius: BorderRadius.circular(12),
+                                            border: Border.all(
+                                              color: !_isEveningShift
+                                                  ? AppColors.primary
+                                                  : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
+                                            ),
+                                          ),
+                                          child: Row(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              Icon(
+                                                Icons.wb_sunny_rounded,
+                                                size: 18,
+                                                color: !_isEveningShift ? Colors.amber : Colors.grey,
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Text(
+                                                'صباحي',
+                                                style: TextStyle(
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: !_isEveningShift
+                                                      ? Colors.white
+                                                      : (isDark ? Colors.white70 : Colors.black87),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: InkWell(
+                                        borderRadius: BorderRadius.circular(12),
+                                        onTap: () => _setShift(true),
+                                        child: AnimatedContainer(
+                                          duration: const Duration(milliseconds: 200),
+                                          padding: const EdgeInsets.symmetric(vertical: 10),
+                                          decoration: BoxDecoration(
+                                            color: _isEveningShift
+                                                ? AppColors.primary
+                                                : (isDark ? AppColors.darkSurface : Colors.grey.shade100),
+                                            borderRadius: BorderRadius.circular(12),
+                                            border: Border.all(
+                                              color: _isEveningShift
+                                                  ? AppColors.primary
+                                                  : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
+                                            ),
+                                          ),
+                                          child: Row(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              Icon(
+                                                Icons.nights_stay_rounded,
+                                                size: 18,
+                                                color: _isEveningShift ? Colors.amber : Colors.grey,
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Text(
+                                                'مسائي',
+                                                style: TextStyle(
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: _isEveningShift
+                                                      ? Colors.white
+                                                      : (isDark ? Colors.white70 : Colors.black87),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                                child: OutlinedButton.icon(
+                                  onPressed: _selectDeadline,
+                                  icon: const Icon(Icons.date_range_rounded, size: 18),
+                                  label: const Text(
+                                    'تحديد التاريخ واليوم من التقويم',
+                                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                                  ),
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(vertical: 10),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Image attachment
+                        const Text(
+                          'إرفاق صورة توضيحية (اختياري)',
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: () => _pickImage(ImageSource.gallery),
+                                icon: const Icon(Icons.photo_library_rounded),
+                                label: const Text('المعرض'),
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: () => _pickImage(ImageSource.camera),
+                                icon: const Icon(Icons.camera_alt_rounded),
+                                label: const Text('الكاميرا'),
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (_imageFile != null) ...[
+                          const SizedBox(height: 14),
+                          Stack(
+                            alignment: Alignment.topRight,
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(16),
+                                child: Image.file(_imageFile!, height: 160, width: double.infinity, fit: BoxFit.cover),
+                              ),
+                              IconButton(
+                                icon: const CircleAvatar(
+                                  backgroundColor: Colors.red,
+                                  radius: 14,
+                                  child: Icon(Icons.close_rounded, size: 16, color: Colors.white),
+                                ),
+                                onPressed: () => setState(() => _imageFile = null),
+                              ),
+                            ],
+                          ),
+                        ],
+                        const SizedBox(height: 32),
+
+                        ElevatedButton(
+                          onPressed: _submit,
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          ),
+                          child: const Text('نشر التحضير للطلاب', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+    );
+  }
+}
