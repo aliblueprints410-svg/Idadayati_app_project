@@ -151,93 +151,121 @@ EXCEPTION WHEN OTHERS THEN NULL;
 END $$;
 
 -- ==============================================================================
--- 3. ترحيل البيانات السابقة تلقائياً (من madrasati_ و idadayati_ إلى taleb_)
+-- 3. ترحيل البيانات السابقة بأمان (من madrasati_ و idadayati_ إلى taleb_)
 -- ==============================================================================
 
 -- ترحيل المدارس
 DO $$
 BEGIN
     IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'madrasati_schools') THEN
-        INSERT INTO taleb_schools (id, name, school_code, school_type, stage, created_at)
-        SELECT id, name, school_code, COALESCE(stage, 'middle'), COALESCE(stage, 'middle'), created_at
+        INSERT INTO taleb_schools (id, name, school_code, school_type, stage)
+        SELECT id, name, school_code, COALESCE(stage, 'middle'), COALESCE(stage, 'middle')
         FROM madrasati_schools
         ON CONFLICT (id) DO NOTHING;
     END IF;
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
 
+DO $$
+BEGIN
     IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'idadayati_schools') THEN
-        INSERT INTO taleb_schools (id, name, school_code, school_type, stage, created_at)
-        SELECT id, name, school_code, 'vocational', 'vocational', created_at
+        INSERT INTO taleb_schools (id, name, school_code, school_type, stage)
+        SELECT id, name, school_code, 'vocational', 'vocational'
         FROM idadayati_schools
         ON CONFLICT (id) DO NOTHING;
     END IF;
+EXCEPTION WHEN OTHERS THEN NULL;
 END $$;
 
 -- ترحيل الصفوف
 DO $$
 BEGIN
     IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'madrasati_classes') THEN
-        INSERT INTO taleb_classes (id, school_id, name, grade_level, "order", created_at)
-        SELECT id, school_id, name, grade_level, "order", created_at
+        INSERT INTO taleb_classes (id, school_id, name)
+        SELECT id, school_id, name
         FROM madrasati_classes
         ON CONFLICT (id) DO NOTHING;
     END IF;
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
 
+DO $$
+BEGIN
     IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'idadayati_classes') THEN
-        INSERT INTO taleb_classes (id, school_id, name, grade_level, "order", created_at)
-        SELECT id, school_id, name, grade_level, grade_level, created_at
+        INSERT INTO taleb_classes (id, school_id, name)
+        SELECT id, school_id, name
         FROM idadayati_classes
         ON CONFLICT (id) DO NOTHING;
     END IF;
+EXCEPTION WHEN OTHERS THEN NULL;
 END $$;
 
 -- ترحيل المواد
 DO $$
 BEGIN
     IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'madrasati_subjects') THEN
-        INSERT INTO taleb_subjects (id, class_id, name, icon, color, created_at)
-        SELECT id, class_id, name, icon, color, created_at
+        INSERT INTO taleb_subjects (id, class_id, name, icon, color)
+        SELECT id, class_id, name, icon, color
         FROM madrasati_subjects
         ON CONFLICT (id) DO NOTHING;
     END IF;
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
 
+DO $$
+BEGIN
     IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'idadayati_subjects') THEN
-        INSERT INTO taleb_subjects (id, class_id, name, icon, color, created_at)
-        SELECT id, class_id, name, icon, color, created_at
+        INSERT INTO taleb_subjects (id, class_id, name, icon, color)
+        SELECT id, class_id, name, icon, color
         FROM idadayati_subjects
         ON CONFLICT (id) DO NOTHING;
     END IF;
+EXCEPTION WHEN OTHERS THEN NULL;
 END $$;
 
 -- ترحيل الواجبات والإعلانات
 DO $$
 BEGIN
     IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'madrasati_homework') THEN
-        INSERT INTO taleb_homework (id, class_id, subject_id, title, description, due_date, deadline, image_url, is_current, is_deleted, created_at)
-        SELECT id, class_id, subject_id, title, description, due_date, deadline, image_url, is_current, is_deleted, created_at
+        INSERT INTO taleb_homework (id, class_id, subject_id, title, description, image_url)
+        SELECT id, class_id, subject_id, title, description, image_url
         FROM madrasati_homework
         ON CONFLICT (id) DO NOTHING;
     END IF;
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
 
+DO $$
+BEGIN
     IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'idadayati_homework') THEN
-        INSERT INTO taleb_homework (id, class_id, subject_id, title, description, due_date, deadline, image_url, is_current, is_deleted, created_at)
-        SELECT id, class_id, subject_id, title, description, due_date, due_date, image_url, true, is_deleted, created_at
+        INSERT INTO taleb_homework (id, class_id, subject_id, title, description, image_url)
+        SELECT id, class_id, subject_id, title, description, image_url
         FROM idadayati_homework
         ON CONFLICT (id) DO NOTHING;
     END IF;
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
 
+DO $$
+BEGIN
     IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'madrasati_announcements') THEN
-        INSERT INTO taleb_announcements (id, school_id, title, content, priority, image_url, is_pinned, is_deleted, created_at)
-        SELECT id, school_id, title, content, priority, image_url, is_pinned, is_deleted, created_at
+        INSERT INTO taleb_announcements (id, school_id, title, content)
+        SELECT id, school_id, title, content
         FROM madrasati_announcements
         ON CONFLICT (id) DO NOTHING;
     END IF;
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
 
+DO $$
+BEGIN
     IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'idadayati_announcements') THEN
-        INSERT INTO taleb_announcements (id, school_id, title, content, priority, image_url, is_pinned, false, created_at)
-        SELECT id, school_id, title, content, priority, image_url, is_pinned, created_at
+        INSERT INTO taleb_announcements (id, school_id, title, content)
+        SELECT id, school_id, title, content
         FROM idadayati_announcements
         ON CONFLICT (id) DO NOTHING;
     END IF;
+EXCEPTION WHEN OTHERS THEN NULL;
 END $$;
 
 -- ==============================================================================
