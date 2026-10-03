@@ -699,7 +699,7 @@ class HomeworkService {
         'السادس الابتدائي (بكالوريا)',
       ];
       for (final pName in primaryNames) {
-        final cId = uuid.v5(Namespace.url.value, 'taleb_class_${cleanSchoolId}_$orderCounter');
+        final cId = uuid.v5(Namespace.url.value, 'madrasati_class_${cleanSchoolId}_$orderCounter');
         generatedClasses.add(SchoolClass(
           id: cId,
           schoolId: cleanSchoolId,
@@ -721,7 +721,7 @@ class HomeworkService {
         'الثالث المتوسط (وزاري)',
       ];
       for (final mName in middleNames) {
-        final cId = uuid.v5(Namespace.url.value, 'taleb_class_${cleanSchoolId}_$orderCounter');
+        final cId = uuid.v5(Namespace.url.value, 'madrasati_class_${cleanSchoolId}_$orderCounter');
         generatedClasses.add(SchoolClass(
           id: cId,
           schoolId: cleanSchoolId,
@@ -746,7 +746,7 @@ class HomeworkService {
         'السادس الأدبي (وزاري)',
       ];
       for (final aName in academicNames) {
-        final cId = uuid.v5(Namespace.url.value, 'taleb_class_${cleanSchoolId}_$orderCounter');
+        final cId = uuid.v5(Namespace.url.value, 'madrasati_class_${cleanSchoolId}_$orderCounter');
         generatedClasses.add(SchoolClass(
           id: cId,
           schoolId: cleanSchoolId,
@@ -779,7 +779,7 @@ class HomeworkService {
         final stages = ['الأول مهني', 'الثاني مهني', 'الثالث مهني'];
         for (int s = 0; s < stages.length; s++) {
           final className = '${stages[s]} - $dept';
-          final cId = uuid.v5(Namespace.url.value, 'taleb_class_${cleanSchoolId}_$orderCounter');
+          final cId = uuid.v5(Namespace.url.value, 'madrasati_class_${cleanSchoolId}_$orderCounter');
           generatedClasses.add(SchoolClass(
             id: cId,
             schoolId: cleanSchoolId,
