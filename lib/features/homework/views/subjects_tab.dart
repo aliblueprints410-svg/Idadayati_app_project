@@ -336,7 +336,7 @@ class SubjectsTab extends ConsumerWidget {
                           ),
                           const SizedBox(height: 4),
                           const Text(
-                            'اختر المادة التخصصية لمشاهدة الواجبات والتحاضير والورش اليومية',
+                            'اختر المادة الدراسية لمشاهدة الواجبات والتحاضير اليومية',
                             style: TextStyle(
                               color: AppColors.textSecondary,
                               fontSize: 12.5,
@@ -715,8 +715,6 @@ class SubjectsTab extends ConsumerWidget {
     final hasUnreadAsync = ref.watch(subjectHasUnreadHomeworkProvider(subject.id));
     final hasUnread = hasUnreadAsync.valueOrNull ?? false;
     final primaryColor = SubjectVisualHelper.getSubjectPrimaryColor(subject.name);
-    final categoryTag = SubjectVisualHelper.getSubjectCategoryTag(subject.name);
-    final isMinisterial = SubjectVisualHelper.isMinisterialSubject(subject.name);
 
     return Stack(
       fit: StackFit.expand,
@@ -803,34 +801,6 @@ class SubjectsTab extends ConsumerWidget {
                                 color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
                               ),
                             ),
-                            if (categoryTag != null) ...[
-                              const SizedBox(height: 5),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: isMinisterial
-                                      ? const Color(0xFFD97706).withValues(alpha: isDark ? 0.22 : 0.10)
-                                      : primaryColor.withValues(alpha: isDark ? 0.15 : 0.08),
-                                  borderRadius: BorderRadius.circular(5),
-                                  border: Border.all(
-                                    color: isMinisterial
-                                        ? const Color(0xFFD97706).withValues(alpha: 0.45)
-                                        : primaryColor.withValues(alpha: 0.25),
-                                    width: 0.8,
-                                  ),
-                                ),
-                                child: Text(
-                                  categoryTag,
-                                  style: TextStyle(
-                                    fontSize: 9.5,
-                                    fontWeight: FontWeight.bold,
-                                    color: isMinisterial
-                                        ? (isDark ? const Color(0xFFFBBF24) : const Color(0xFFB45309))
-                                        : primaryColor,
-                                  ),
-                                ),
-                              ),
-                            ],
                           ],
                         ),
                       ),

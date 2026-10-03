@@ -369,16 +369,8 @@ class SubjectVisualHelper {
     return s.contains('وزاري') || s.contains('وزارية') || s.contains('بكالوريا');
   }
 
-  /// استخراج تصنيف المادة (وزاري، عملي، تخصصي، عام)
+  /// تم إلغاء شارات التصنيف (وزاري، عملي، تخصصي) لعرض المواد بشكل نقي وبسيط
   static String? getSubjectCategoryTag(String subjectName) {
-    final s = subjectName.trim().toLowerCase();
-    if (isMinisterialSubject(subjectName)) return 'وزاري';
-    if (s.contains('عملي') || s.contains('ورش') || s.contains('مختبر') || s.contains('تدريب')) {
-      return 'تدريب عملي';
-    }
-    if (s.contains('صناعية') || s.contains('رسم') || s.contains('سيبراني') || s.contains('شبكات') || s.contains('معالجات')) {
-      return 'تخصصي';
-    }
     return null;
   }
 }

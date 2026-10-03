@@ -42,6 +42,7 @@ class ThemeModeNotifier extends StateNotifier<ThemeMode> {
     _storage.saveThemeMode(modeStr);
   }
 
+  @override
   set state(ThemeMode value) => setThemeMode(value);
 }
 
