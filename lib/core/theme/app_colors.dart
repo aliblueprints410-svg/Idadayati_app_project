@@ -37,14 +37,17 @@ class AppColors {
   static const Color lightTextPrimary = Color(0xFF0F172A);
   static const Color lightTextSecondary = Color(0xFF475569);
 
-  // Consistency & Compatibility (ensures 100% pure white surfaces throughout the entire app)
-  static const Color darkBackground = Color(0xFFFFFFFF);
-  static const Color darkSurface = Color(0xFFFFFFFF);
-  static const Color darkCard = Color(0xFFFFFFFF);
-  static const Color darkBorder = Color(0xFFE2E8F0);
-  static const Color darkTextPrimary = Color(0xFF0F172A);
-  static const Color darkTextSecondary = Color(0xFF475569);
+  // Dark Mode Palette (Rich Slate / Deep Midnight with Gold & Royal Blue Accents)
+  static const Color darkBackground = Color(0xFF0F172A);
+  static const Color darkSurface = Color(0xFF1E293B);
+  static const Color darkCard = Color(0xFF1E293B);
+  static const Color darkBorder = Color(0xFF334155);
+  static const Color darkTextPrimary = Color(0xFFF8FAFC);
+  static const Color darkTextSecondary = Color(0xFFCBD5E1);
   static const Color darkTextMuted = Color(0xFF94A3B8);
+  static const Color darkSurfaceMuted = Color(0xFF151E2E);
+  static const Color darkBlueSurface = Color(0xFF1E2A4A);
+  static const Color darkGoldSurface = Color(0xFF2E2413);
 
   // Borders & Dividers
   static const Color border = Color(0xFFE2E8F0);

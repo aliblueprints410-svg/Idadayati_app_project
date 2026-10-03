@@ -12,7 +12,14 @@ import '../providers/homework_providers.dart';
 import 'main_screen.dart';
 
 class GradeSelectionScreen extends ConsumerStatefulWidget {
-  const GradeSelectionScreen({super.key});
+  final String? departmentFilter;
+  final bool showDepartments;
+
+  const GradeSelectionScreen({
+    super.key,
+    this.departmentFilter,
+    this.showDepartments = true,
+  });
 
   @override
   ConsumerState<GradeSelectionScreen> createState() => _GradeSelectionScreenState();
@@ -22,6 +29,14 @@ class _GradeSelectionScreenState extends ConsumerState<GradeSelectionScreen> {
   String _selectedDepartment = 'تكنولوجيا المعلومات والحاسوب';
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.departmentFilter != null && widget.departmentFilter!.isNotEmpty) {
+      _selectedDepartment = widget.departmentFilter!;
+    }
+  }
 
   static const List<Map<String, dynamic>> _vocationalDepartments = [
     {'name': 'تكنولوجيا المعلومات والحاسوب', 'icon': Icons.computer_rounded, 'color': Color(0xFF1E40AF)},
@@ -45,6 +60,11 @@ class _GradeSelectionScreenState extends ConsumerState<GradeSelectionScreen> {
     final localStorage = ref.read(localStorageServiceProvider);
     await localStorage.saveSelectedGrade(schoolClass.id);
     await localStorage.saveSelectedGradeName(schoolClass.name);
+
+    if (schoolClass.name.contains(' - ')) {
+      final dept = schoolClass.name.split(' - ').sublist(1).join(' - ').trim();
+      await localStorage.saveSelectedDepartment(dept);
+    }
 
     final currentSchoolId = localStorage.getSchoolCode();
     if (currentSchoolId != null && currentSchoolId.isNotEmpty) {
@@ -75,39 +95,41 @@ class _GradeSelectionScreenState extends ConsumerState<GradeSelectionScreen> {
     final activeSchool = ref.watch(activeSchoolProvider).valueOrNull;
     final schoolName = activeSchool?.name ?? localStorage.getSchoolName() ?? AppConstants.kirkukVocSchoolName;
     final hPadding = Responsive.getHorizontalPadding(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isLockedToDepartment = widget.departmentFilter != null && widget.departmentFilter!.isNotEmpty;
+    final currentDepartment = isLockedToDepartment ? widget.departmentFilter! : _selectedDepartment;
 
     if (schoolId == null) {
-      return const Scaffold(
-        backgroundColor: Colors.white,
-        body: Center(child: Text('تنبيه: يرجى تسجيل الدخول أولاً')),
+      return Scaffold(
+        backgroundColor: isDark ? AppColors.darkBackground : Colors.white,
+        body: const Center(child: Text('تنبيه: يرجى تسجيل الدخول أولاً')),
       );
     }
 
     final classesAsync = ref.watch(classesProvider(schoolId));
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? AppColors.darkBackground : Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: isDark ? AppColors.darkBackground : Colors.white,
         elevation: 0,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              'اختيار القسم والمرحلة',
-              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17, color: AppColors.primary),
+            Text(
+              isLockedToDepartment ? 'تغيير الصف' : 'اختيار القسم والمرحلة',
+              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17, color: isDark ? Colors.white : AppColors.primary),
             ),
-            if (schoolName.isNotEmpty)
-              Text(
-                schoolName,
-                style: const TextStyle(fontSize: 12, color: AppColors.gold, fontWeight: FontWeight.bold),
-              ),
+            Text(
+              isLockedToDepartment ? currentDepartment : (schoolName.isNotEmpty ? schoolName : ''),
+              style: const TextStyle(fontSize: 12, color: AppColors.gold, fontWeight: FontWeight.bold),
+            ),
           ],
         ),
         leading: Navigator.canPop(context)
             ? IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.primary),
+                icon: Icon(Icons.arrow_back_ios_new_rounded, color: isDark ? Colors.white : AppColors.primary),
                 onPressed: () => Navigator.pop(context),
               )
             : null,
@@ -125,12 +147,15 @@ class _GradeSelectionScreenState extends ConsumerState<GradeSelectionScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: isDark ? AppColors.darkSurface : Colors.white,
                       borderRadius: BorderRadius.circular(22),
-                      border: Border.all(color: AppColors.borderGold, width: 1.5),
+                      border: Border.all(
+                        color: isDark ? AppColors.darkBorder : AppColors.borderGold,
+                        width: 1.5,
+                      ),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.08),
+                          color: (isDark ? Colors.black : AppColors.primary).withValues(alpha: 0.08),
                           blurRadius: 18,
                           offset: const Offset(0, 6),
                         ),
@@ -146,30 +171,32 @@ class _GradeSelectionScreenState extends ConsumerState<GradeSelectionScreen> {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: AppColors.goldSurface,
+                            color: isDark ? AppColors.darkGoldSurface : AppColors.goldSurface,
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(color: AppColors.gold.withValues(alpha: 0.3)),
                           ),
                           child: const Icon(Icons.workspace_premium_rounded, color: AppColors.gold, size: 28),
                         ),
                         const SizedBox(width: 14),
-                        const Expanded(
+                        Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'مرحباً بك في إعداديتي ✨',
+                                isLockedToDepartment ? 'تغيير المرحلة الدراسية ✨' : 'مرحباً بك في إعداديتي ✨',
                                 style: TextStyle(
-                                  color: AppColors.primary,
+                                  color: isDark ? Colors.white : AppColors.primary,
                                   fontSize: 17,
                                   fontWeight: FontWeight.w900,
                                 ),
                               ),
-                              SizedBox(height: 4),
+                              const SizedBox(height: 4),
                               Text(
-                                'حدد قسمك وتخصصك المهني لعرض المواد والجداول والواجبات',
+                                isLockedToDepartment
+                                    ? 'قسم: $currentDepartment • اختر مرحلتك لعرض المواد'
+                                    : 'حدد قسمك وتخصصك المهني لعرض المواد والجداول والواجبات',
                                 style: TextStyle(
-                                  color: AppColors.textSecondary,
+                                  color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
                                   fontSize: 12,
                                   height: 1.35,
                                 ),
@@ -220,53 +247,54 @@ class _GradeSelectionScreenState extends ConsumerState<GradeSelectionScreen> {
                   ),
                 ),
 
-                // Horizontal Department Filter Chips
-                SizedBox(
-                  height: 48,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    padding: EdgeInsets.symmetric(horizontal: hPadding, vertical: 4),
-                    itemCount: _vocationalDepartments.length,
-                    itemBuilder: (context, index) {
-                      final dept = _vocationalDepartments[index];
-                      final isSelected = _selectedDepartment == dept['name'];
-                      final Color deptColor = dept['color'];
+                // Horizontal Department Filter Chips (Shown only when departments selection is enabled and not locked)
+                if (widget.showDepartments && !isLockedToDepartment)
+                  SizedBox(
+                    height: 48,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      padding: EdgeInsets.symmetric(horizontal: hPadding, vertical: 4),
+                      itemCount: _vocationalDepartments.length,
+                      itemBuilder: (context, index) {
+                        final dept = _vocationalDepartments[index];
+                        final isSelected = _selectedDepartment == dept['name'];
+                        final Color deptColor = dept['color'];
 
-                      return Padding(
-                        padding: const EdgeInsets.only(left: 8.0),
-                        child: FilterChip(
-                          avatar: Icon(
-                            dept['icon'],
-                            size: 16,
-                            color: isSelected ? Colors.white : deptColor,
-                          ),
-                          label: Text(dept['name']),
-                          selected: isSelected,
-                          onSelected: (_) {
-                            setState(() {
-                              _selectedDepartment = dept['name'];
-                            });
-                          },
-                          backgroundColor: Colors.white,
-                          selectedColor: AppColors.primary,
-                          labelStyle: TextStyle(
-                            fontSize: 12,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                            color: isSelected ? Colors.white : AppColors.textPrimary,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            side: BorderSide(
-                              color: isSelected ? AppColors.primary : AppColors.border,
-                              width: 1.2,
+                        return Padding(
+                          padding: const EdgeInsets.only(left: 8.0),
+                          child: FilterChip(
+                            avatar: Icon(
+                              dept['icon'],
+                              size: 16,
+                              color: isSelected ? Colors.white : deptColor,
                             ),
+                            label: Text(dept['name']),
+                            selected: isSelected,
+                            onSelected: (_) {
+                              setState(() {
+                                _selectedDepartment = dept['name'];
+                              });
+                            },
+                            backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
+                            selectedColor: AppColors.primary,
+                            labelStyle: TextStyle(
+                              fontSize: 12,
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                              color: isSelected ? Colors.white : (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              side: BorderSide(
+                                color: isSelected ? AppColors.primary : (isDark ? AppColors.darkBorder : AppColors.border),
+                                width: 1.2,
+                              ),
+                            ),
+                            showCheckmark: false,
                           ),
-                          showCheckmark: false,
-                        ),
-                      );
-                    },
+                        );
+                      },
+                    ),
                   ),
-                ),
 
                 const SizedBox(height: 8),
 
@@ -276,9 +304,9 @@ class _GradeSelectionScreenState extends ConsumerState<GradeSelectionScreen> {
                     data: (classes) {
                       // Filter by selected department and search query
                       final filtered = classes.where((c) {
-                        final matchesDept = _selectedDepartment == 'الكل' ||
-                            c.name.contains(_selectedDepartment) ||
-                            _selectedDepartment.contains(c.name.replaceAll('الأول مهني - ', '').replaceAll('الثاني مهني - ', '').replaceAll('الثالث مهني - ', ''));
+                        final matchesDept = currentDepartment.isEmpty ||
+                            c.name.contains(currentDepartment) ||
+                            currentDepartment.contains(c.name.replaceAll('الأول مهني - ', '').replaceAll('الثاني مهني - ', '').replaceAll('الثالث مهني - ', ''));
 
                         final matchesSearch = _searchQuery.isEmpty ||
                             c.name.toLowerCase().contains(_searchQuery.toLowerCase());

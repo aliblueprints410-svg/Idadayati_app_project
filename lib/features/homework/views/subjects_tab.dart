@@ -139,11 +139,13 @@ class SubjectsTab extends ConsumerWidget {
       if (gradeName.isNotEmpty) gradeName,
     ];
 
+    final currentDept = localStorage.getSelectedDepartment();
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? AppColors.darkBackground : Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.white,
+        backgroundColor: isDark ? AppColors.darkBackground : Colors.white,
+        surfaceTintColor: isDark ? AppColors.darkBackground : Colors.white,
         elevation: 0,
         scrolledUnderElevation: 1,
         centerTitle: false,
@@ -153,10 +155,10 @@ class SubjectsTab extends ConsumerWidget {
           children: [
             Text(
               schoolName.isNotEmpty ? schoolName : 'المواد الدراسية',
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.w900,
                 fontSize: 16,
-                color: AppColors.primary,
+                color: isDark ? Colors.white : AppColors.primary,
               ),
               overflow: TextOverflow.ellipsis,
             ),
@@ -187,17 +189,32 @@ class SubjectsTab extends ConsumerWidget {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const GradeSelectionScreen()),
+                  MaterialPageRoute(
+                    builder: (_) => GradeSelectionScreen(
+                      departmentFilter: currentDept,
+                      showDepartments: false,
+                    ),
+                  ),
                 );
               },
-              icon: const Icon(Icons.swap_horiz_rounded, size: 18, color: AppColors.primary),
-              label: const Text('تغيير القسم', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary)),
+              icon: Icon(Icons.swap_vert_rounded, size: 18, color: isDark ? AppColors.primaryLight : AppColors.primary),
+              label: Text(
+                'تغيير الصف',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? AppColors.primaryLight : AppColors.primary,
+                ),
+              ),
               style: TextButton.styleFrom(
-                backgroundColor: AppColors.blueSurface,
+                backgroundColor: isDark ? AppColors.darkBlueSurface : AppColors.blueSurface,
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
-                  side: const BorderSide(color: AppColors.borderBlue, width: 1.0),
+                  side: BorderSide(
+                    color: isDark ? AppColors.darkBorder : AppColors.borderBlue,
+                    width: 1.0,
+                  ),
                 ),
               ),
             ),

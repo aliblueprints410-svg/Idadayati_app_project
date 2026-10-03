@@ -25,7 +25,10 @@ class _MainScreenState extends ConsumerState<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
+      backgroundColor: isDark ? AppColors.darkBackground : Colors.white,
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 600),
@@ -36,7 +39,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         ),
       ),
       bottomNavigationBar: Container(
-        color: Colors.white,
+        color: isDark ? AppColors.darkSurface : Colors.white,
         child: SafeArea(
           top: false,
           child: Center(
@@ -45,10 +48,10 @@ class _MainScreenState extends ConsumerState<MainScreen> {
               constraints: const BoxConstraints(maxWidth: 600),
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: isDark ? AppColors.darkSurface : Colors.white,
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.06),
+                      color: (isDark ? Colors.black : AppColors.primary).withValues(alpha: 0.06),
                       blurRadius: 20,
                       offset: const Offset(0, -4),
                     ),
@@ -58,9 +61,9 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                       offset: const Offset(0, -2),
                     ),
                   ],
-                  border: const Border(
+                  border: Border(
                     top: BorderSide(
-                      color: AppColors.border,
+                      color: isDark ? AppColors.darkBorder : AppColors.border,
                       width: 1,
                     ),
                   ),
@@ -69,10 +72,10 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    Expanded(child: _buildNavItem(0, Icons.menu_book_rounded, Icons.menu_book_outlined, 'المواد')),
-                    Expanded(child: _buildNavItem(1, Icons.calendar_month_rounded, Icons.calendar_month_outlined, 'الجدول')),
-                    Expanded(child: _buildNavItem(2, Icons.campaign_rounded, Icons.campaign_outlined, 'التبليغات')),
-                    Expanded(child: _buildNavItem(3, Icons.settings_rounded, Icons.settings_outlined, 'الإعدادات')),
+                    Expanded(child: _buildNavItem(0, Icons.menu_book_rounded, Icons.menu_book_outlined, 'المواد', isDark)),
+                    Expanded(child: _buildNavItem(1, Icons.calendar_month_rounded, Icons.calendar_month_outlined, 'الجدول', isDark)),
+                    Expanded(child: _buildNavItem(2, Icons.campaign_rounded, Icons.campaign_outlined, 'التبليغات', isDark)),
+                    Expanded(child: _buildNavItem(3, Icons.settings_rounded, Icons.settings_outlined, 'الإعدادات', isDark)),
                   ],
                 ),
               ),
@@ -83,7 +86,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     );
   }
 
-  Widget _buildNavItem(int index, IconData selectedIcon, IconData unselectedIcon, String label) {
+  Widget _buildNavItem(int index, IconData selectedIcon, IconData unselectedIcon, String label, bool isDark) {
     final isSelected = _currentIndex == index;
 
     return InkWell(
@@ -95,11 +98,11 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.primary.withValues(alpha: 0.09)
+              ? (isDark ? AppColors.primaryLight.withValues(alpha: 0.2) : AppColors.primary.withValues(alpha: 0.09))
               : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
           border: isSelected
-              ? Border.all(color: AppColors.borderGold, width: 1.0)
+              ? Border.all(color: isDark ? AppColors.gold : AppColors.borderGold, width: 1.0)
               : null,
         ),
         child: Column(
@@ -108,7 +111,9 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             Icon(
               isSelected ? selectedIcon : unselectedIcon,
               size: 24,
-              color: isSelected ? AppColors.primary : AppColors.textMuted,
+              color: isSelected
+                  ? (isDark ? AppColors.goldLight : AppColors.primary)
+                  : (isDark ? AppColors.darkTextMuted : AppColors.textMuted),
             ),
             const SizedBox(height: 4),
             Text(
@@ -116,7 +121,9 @@ class _MainScreenState extends ConsumerState<MainScreen> {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
-                color: isSelected ? AppColors.primary : AppColors.textMuted,
+                color: isSelected
+                    ? (isDark ? AppColors.goldLight : AppColors.primary)
+                    : (isDark ? AppColors.darkTextMuted : AppColors.textMuted),
               ),
             ),
           ],

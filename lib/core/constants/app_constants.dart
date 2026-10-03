@@ -31,6 +31,7 @@ class AppConstants {
   static const String keySelectedGrade = 'selected_grade';
   static const String keySelectedGradeName = 'selected_grade_name';
   static const String keyBiometricEnabled = 'biometric_enabled';
+  static const String keyThemeMode = 'theme_mode';
 
   /// Returns a valid 36-char UUID, falling back safely to defaultSchoolId
   static String sanitizeSchoolId(String? rawId) {

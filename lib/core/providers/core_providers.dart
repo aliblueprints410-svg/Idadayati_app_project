@@ -21,5 +21,31 @@ final supabaseClientProvider = Provider<SupabaseClient>((ref) {
   return Supabase.instance.client;
 });
 
-// 4. Theme Mode Provider (Light/Dark Mode)
-final themeModeProvider = StateProvider<ThemeMode>((ref) => ThemeMode.system);
+// 4. Theme Mode Notifier (Persists Light/Dark Mode)
+class ThemeModeNotifier extends StateNotifier<ThemeMode> {
+  final LocalStorageService _storage;
+
+  ThemeModeNotifier(this._storage) : super(_loadInitialMode(_storage));
+
+  static ThemeMode _loadInitialMode(LocalStorageService storage) {
+    final modeStr = storage.getThemeMode();
+    if (modeStr == 'dark') return ThemeMode.dark;
+    if (modeStr == 'light') return ThemeMode.light;
+    return ThemeMode.system;
+  }
+
+  void setThemeMode(ThemeMode mode) {
+    super.state = mode;
+    final modeStr = mode == ThemeMode.dark
+        ? 'dark'
+        : (mode == ThemeMode.light ? 'light' : 'system');
+    _storage.saveThemeMode(modeStr);
+  }
+
+  set state(ThemeMode value) => setThemeMode(value);
+}
+
+final themeModeProvider = StateNotifierProvider<ThemeModeNotifier, ThemeMode>((ref) {
+  final storage = ref.watch(localStorageServiceProvider);
+  return ThemeModeNotifier(storage);
+});

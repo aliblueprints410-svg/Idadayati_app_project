@@ -60,10 +60,35 @@ class LocalStorageService {
     return _prefs.getString('selected_grade_name');
   }
 
+  // Selected Department
+  Future<void> saveSelectedDepartment(String department) async {
+    await _prefs.setString(AppConstants.keySelectedDepartment, department);
+  }
+
+  String? getSelectedDepartment() {
+    final direct = _prefs.getString(AppConstants.keySelectedDepartment);
+    if (direct != null && direct.isNotEmpty) return direct;
+    final gradeName = getSelectedGradeName();
+    if (gradeName != null && gradeName.contains(' - ')) {
+      return gradeName.split(' - ').sublist(1).join(' - ').trim();
+    }
+    return null;
+  }
+
+  // Theme Mode ('system', 'light', 'dark')
+  Future<void> saveThemeMode(String mode) async {
+    await _prefs.setString(AppConstants.keyThemeMode, mode);
+  }
+
+  String? getThemeMode() {
+    return _prefs.getString(AppConstants.keyThemeMode);
+  }
+
   // Clear student grade selection when logging in as teacher
   Future<void> clearStudentGrade() async {
     await _prefs.remove(AppConstants.keySelectedGrade);
     await _prefs.remove('selected_grade_name');
+    await _prefs.remove(AppConstants.keySelectedDepartment);
   }
 
   // Clear active user session (used on Teacher or Student logout so it never drops into Student mode)
@@ -73,6 +98,7 @@ class LocalStorageService {
     await _prefs.remove(AppConstants.keySchoolShortCode);
     await _prefs.remove(AppConstants.keySelectedGrade);
     await _prefs.remove('selected_grade_name');
+    await _prefs.remove(AppConstants.keySelectedDepartment);
     await _prefs.remove(AppConstants.keyStudentName);
   }
 

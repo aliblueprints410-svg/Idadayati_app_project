@@ -134,6 +134,7 @@ class SettingsTab extends ConsumerWidget {
     final shortCode = activeSchool?.schoolCode ?? localStorage.getSchoolShortCode() ?? '';
     final gradeName = localStorage.getSelectedGradeName() ?? '';
     final schoolCode = localStorage.getSchoolCode() ?? 'غير محدد';
+    final currentDept = localStorage.getSelectedDepartment();
     final displayCode = shortCode.isNotEmpty
         ? shortCode
         : ((schoolCode == AppConstants.defaultSchoolId || schoolCode == 'd581107e-2f01-4bd0-a89d-bf27f36a2574')
@@ -362,28 +363,64 @@ class SettingsTab extends ConsumerWidget {
               const SizedBox(height: 24),
 
               // Section 2: Academic Info
-              _buildSectionHeader('المرحلة الدراسية'),
+              _buildSectionHeader('المرحلة الدراسية والتخصص'),
               const SizedBox(height: 10),
               Container(
                 decoration: _cardBoxDecoration(context, isDark),
-                child: ListTile(
-                  leading: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppColors.secondary.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(10),
+                child: Column(
+                  children: [
+                    ListTile(
+                      leading: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.secondary.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.swap_vert_rounded, color: AppColors.secondary),
+                      ),
+                      title: const Text('تغيير الصف أو الترقية', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                      subtitle: Text(
+                        currentDept != null ? 'الانتقال لصف آخر ضمن قسم: $currentDept' : 'اختر صفاً آخر إذا قمت بالترقية',
+                        style: const TextStyle(fontSize: 12, color: Colors.grey),
+                      ),
+                      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.grey),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => GradeSelectionScreen(
+                              departmentFilter: currentDept,
+                              showDepartments: false,
+                            ),
+                          ),
+                        );
+                      },
                     ),
-                    child: const Icon(Icons.swap_vert_rounded, color: AppColors.secondary),
-                  ),
-                  title: const Text('تغيير الصف أو الترقية', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-                  subtitle: const Text('اختر صفاً آخر إذا قمت بالترقية', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                  trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.grey),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const GradeSelectionScreen()),
-                    );
-                  },
+                    const Divider(height: 1, indent: 16, endIndent: 16),
+                    ListTile(
+                      leading: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.gold.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.category_rounded, color: AppColors.gold),
+                      ),
+                      title: const Text('تغيير القسم والتخصص المهني', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                      subtitle: const Text('الانتقال إلى تخصص آخر (كهرباء، حاسوب، سيارات...)', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.grey),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const GradeSelectionScreen(
+                              showDepartments: true,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 24),
