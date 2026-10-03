@@ -518,15 +518,16 @@ class HomeworkService {
         'التربية الفنية',
       ];
     } else {
+      // الافتراضي للتعليم المهني والإعدادي
       return [
-        'التربية الاسلامية',
+        'التربية الإسلامية',
         'اللغة العربية',
-        'الرياضيات',
-        'العلوم',
-        'اللغة الانكليزية',
-        'الاجتماعيات',
-        'التربية الرياضية',
-        'التربية الفنية',
+        'اللغة الإنكليزية',
+        'الرياضيات التطبيقية',
+        'الطبيعيات',
+        'العلوم الصناعية التخصصية',
+        'التدريب العملي والورش',
+        'الرسم الهندسي والصناعي',
       ];
     }
   }
@@ -540,7 +541,7 @@ class HomeworkService {
           .from(AppTables.classes)
           .select()
           .eq('school_id', cleanSchoolId)
-          .order('order', ascending: true);
+          .order('grade_level', ascending: true);
 
       final list = (response as List).map((e) => SchoolClass.fromJson(e)).toList();
       if (list.isNotEmpty) {
@@ -861,6 +862,13 @@ class HomeworkService {
         if (classRes != null && classRes['name'] != null) {
           gradeName = classRes['name'] as String;
         }
+      } catch (_) {}
+    }
+
+    if (gradeName.isEmpty) {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        gradeName = prefs.getString('selected_grade_name') ?? '';
       } catch (_) {}
     }
 

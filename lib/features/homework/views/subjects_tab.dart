@@ -11,6 +11,7 @@ import '../../announcements/providers/announcement_providers.dart';
 import '../../announcements/views/announcement_details_screen.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../../schedule/providers/schedule_providers.dart';
+import '../models/school_class.dart';
 import '../models/subject.dart';
 import '../providers/homework_providers.dart';
 import 'grade_selection_screen.dart';
@@ -126,11 +127,21 @@ class SubjectsTab extends ConsumerWidget {
 
     String gradeName = localStorage.getSelectedGradeName() ?? '';
     classesAsync.whenData((classes) {
+      bool idFound = false;
+      SchoolClass? nameMatch;
       for (final c in classes) {
         if (c.id == gradeId) {
           gradeName = c.name;
+          idFound = true;
           break;
         }
+        if (gradeName.isNotEmpty && c.name.trim() == gradeName.trim()) {
+          nameMatch = c;
+        }
+      }
+      if (!idFound && nameMatch != null) {
+        localStorage.saveSelectedGrade(nameMatch.id);
+        ref.invalidate(subjectsProvider);
       }
     });
 
@@ -448,7 +459,7 @@ class SubjectsTab extends ConsumerWidget {
                         crossAxisCount: gridCount,
                         crossAxisSpacing: 14,
                         mainAxisSpacing: 14,
-                        childAspectRatio: 1.0,
+                        childAspectRatio: 0.92,
                       ),
                       itemCount: subjects.length,
                       itemBuilder: (context, index) {
@@ -703,6 +714,9 @@ class SubjectsTab extends ConsumerWidget {
   Widget _buildSubjectCard(BuildContext context, WidgetRef ref, Subject subject, List<Color> gradient, bool isDark) {
     final hasUnreadAsync = ref.watch(subjectHasUnreadHomeworkProvider(subject.id));
     final hasUnread = hasUnreadAsync.valueOrNull ?? false;
+    final primaryColor = SubjectVisualHelper.getSubjectPrimaryColor(subject.name);
+    final categoryTag = SubjectVisualHelper.getSubjectCategoryTag(subject.name);
+    final isMinisterial = SubjectVisualHelper.isMinisterialSubject(subject.name);
 
     return Stack(
       fit: StackFit.expand,
@@ -713,79 +727,112 @@ class SubjectsTab extends ConsumerWidget {
           height: double.infinity,
           decoration: BoxDecoration(
             color: isDark ? AppColors.darkCard : Colors.white,
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(18),
             border: Border.all(
-              color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+              color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
               width: 1.2,
             ),
             boxShadow: [
               BoxShadow(
-                color: gradient[0].withValues(alpha: isDark ? 0.15 : 0.07),
-                blurRadius: 12,
-                offset: const Offset(0, 5),
+                color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.04),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
               ),
             ],
           ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(22),
-              onTap: () async {
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => SubjectDetailsScreen(subject: subject),
-                  ),
-                );
-                ref.invalidate(subjectHasUnreadHomeworkProvider(subject.id));
-              },
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 12.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: gradient,
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.28),
-                          width: 1.2,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: gradient[0].withValues(alpha: isDark ? 0.35 : 0.22),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Center(
-                        child: Icon(
-                          SubjectVisualHelper.getSubjectIcon(subject.name),
-                          color: Colors.white,
-                          size: 29,
-                        ),
-                      ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(18),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () async {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => SubjectDetailsScreen(subject: subject),
                     ),
-                    const SizedBox(height: 10),
-                    Text(
-                      subject.name,
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.bold,
-                        height: 1.2,
-                        color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                  );
+                  ref.invalidate(subjectHasUnreadHomeworkProvider(subject.id));
+                },
+                child: Column(
+                  children: [
+                    // Subtle Top Accent Strip
+                    Container(
+                      height: 3.5,
+                      width: double.infinity,
+                      color: primaryColor,
+                    ),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            // Mature Executive Emblem
+                            Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                color: primaryColor.withValues(alpha: isDark ? 0.18 : 0.09),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: primaryColor.withValues(alpha: isDark ? 0.38 : 0.22),
+                                  width: 1.2,
+                                ),
+                              ),
+                              child: Center(
+                                child: Icon(
+                                  SubjectVisualHelper.getSubjectIcon(subject.name),
+                                  color: primaryColor,
+                                  size: 25,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            // Subject Title
+                            Text(
+                              subject.name,
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.bold,
+                                height: 1.2,
+                                color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                              ),
+                            ),
+                            if (categoryTag != null) ...[
+                              const SizedBox(height: 5),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: isMinisterial
+                                      ? const Color(0xFFD97706).withValues(alpha: isDark ? 0.22 : 0.10)
+                                      : primaryColor.withValues(alpha: isDark ? 0.15 : 0.08),
+                                  borderRadius: BorderRadius.circular(5),
+                                  border: Border.all(
+                                    color: isMinisterial
+                                        ? const Color(0xFFD97706).withValues(alpha: 0.45)
+                                        : primaryColor.withValues(alpha: 0.25),
+                                    width: 0.8,
+                                  ),
+                                ),
+                                child: Text(
+                                  categoryTag,
+                                  style: TextStyle(
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.bold,
+                                    color: isMinisterial
+                                        ? (isDark ? const Color(0xFFFBBF24) : const Color(0xFFB45309))
+                                        : primaryColor,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
                       ),
                     ),
                   ],

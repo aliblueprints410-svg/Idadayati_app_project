@@ -16,7 +16,7 @@ class SchoolClass {
       id: json['id'] ?? '',
       schoolId: json['school_id'] ?? '',
       name: json['name'] ?? '',
-      order: json['order'] ?? 0,
+      order: json['order'] ?? json['grade_level'] ?? 0,
     );
   }
 
