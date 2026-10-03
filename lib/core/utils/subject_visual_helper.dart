@@ -19,8 +19,10 @@ class SubjectVisualHelper {
       return Icons.menu_book_rounded;
     }
 
-    // 2. اللغة العربية والأدب والبلاغة (رمز قلم الحبر والمخطوطة الأدبية الراقية)
-    if (s.contains('عربي') ||
+    // 2. اللغة العربية والأدب والبلاغة وقراءتي
+    if (s.contains('قراءة') ||
+        s.contains('قراءتي') ||
+        s.contains('عربي') ||
         s.contains('عربية') ||
         s.contains('لغة عربية') ||
         s.contains('قواعد') ||
@@ -28,7 +30,36 @@ class SubjectVisualHelper {
         s.contains('ادب') ||
         s.contains('بلاغة') ||
         s.contains('نصوص')) {
-      return Icons.history_edu_rounded;
+      return s.contains('قراءة') || s.contains('قراءتي') ? Icons.auto_stories_rounded : Icons.history_edu_rounded;
+    }
+
+    // 2.1 الاجتماعيات، التاريخ، الجغرافية، التربية الوطنية
+    if (s.contains('اجتماعيات') ||
+        s.contains('تاريخ') ||
+        s.contains('جغراف') ||
+        s.contains('وطنية') ||
+        s.contains('social')) {
+      return Icons.public_rounded;
+    }
+
+    // 2.2 علم الأحياء والبيولوجيا
+    if (s.contains('أحياء') || s.contains('احياء') || s.contains('biology')) {
+      return Icons.biotech_rounded;
+    }
+
+    // 2.3 التربية الأخلاقية وعلم النفس والفلسفة
+    if (s.contains('اخلاق') || s.contains('أخلاق') || s.contains('فلسفة') || s.contains('نفس')) {
+      return Icons.psychology_alt_rounded;
+    }
+
+    // 2.4 التربية الفنية والموسيقى
+    if (s.contains('فنية') || s.contains('فنون') || s.contains('موسيقى')) {
+      return Icons.palette_rounded;
+    }
+
+    // 2.5 الاقتصاد والعلوم المالية
+    if (s.contains('اقتصاد') || s.contains('مالية') || s.contains('تجارة')) {
+      return Icons.trending_up_rounded;
     }
 
     // 3. الرياضيات والجبر والهندسة التحليلية (رمز الدوال والرياضيات المتقدمة)
@@ -286,6 +317,26 @@ class SubjectVisualHelper {
       return const Color(0xFF9A3412); // Bronze
     }
 
+    // الاجتماعيات والتاريخ والجغرافية: نحاسي هادئ وقور
+    if (s.contains('اجتماعيات') || s.contains('تاريخ') || s.contains('جغراف') || s.contains('وطنية')) {
+      return const Color(0xFFB45309); // Warm Amber/Copper
+    }
+
+    // علم الأحياء: زمردي نباتي داكن
+    if (s.contains('أحياء') || s.contains('احياء') || s.contains('biology')) {
+      return const Color(0xFF047857); // Deep Emerald Green
+    }
+
+    // التربية الأخلاقية وعلم النفس والفلسفة: تيل راقٍ
+    if (s.contains('اخلاق') || s.contains('أخلاق') || s.contains('فلسفة') || s.contains('نفس')) {
+      return const Color(0xFF0F766E); // Deep Teal
+    }
+
+    // التربية الفنية: بنفسجي كلاسيكي
+    if (s.contains('فنية') || s.contains('فنون')) {
+      return const Color(0xFF6D28D9); // Classic Violet
+    }
+
     // الرياضة
     if (s.contains('رياضة') || s.contains('بدنية')) {
       return const Color(0xFF374151); // Gray Sport
@@ -315,7 +366,7 @@ class SubjectVisualHelper {
   /// فحص هل المادة وزارية لإظهار شارة فخمة خاصة بها
   static bool isMinisterialSubject(String subjectName) {
     final s = subjectName.trim().toLowerCase();
-    return s.contains('وزاري') || s.contains('وزارية');
+    return s.contains('وزاري') || s.contains('وزارية') || s.contains('بكالوريا');
   }
 
   /// استخراج تصنيف المادة (وزاري، عملي، تخصصي، عام)

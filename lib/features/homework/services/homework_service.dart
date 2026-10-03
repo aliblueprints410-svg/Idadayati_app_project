@@ -47,8 +47,158 @@ class HomeworkService {
   List<String> getSubjectsListForGrade(String gradeName) {
     final name = gradeName.toLowerCase();
 
-    // التعليم المهني (وفق جدول إعدادية كركوك المهنية)
-    if (name.contains('مهني') || name.contains('صناعي') || name.contains('إعدادي') || name.contains('اعدادي')) {
+    // 1. المرحلة الابتدائية (الصفوف 1 - 6)
+    if (name.contains('ابتدائ') || name.contains('ابتدائي')) {
+      if (name.contains('سادس') || name.contains('6') || name.contains('بكالوريا') || name.contains('وزاري')) {
+        return [
+          'التربية الإسلامية',
+          'اللغة العربية (وزاري)',
+          'الرياضيات (وزاري)',
+          'العلوم (وزاري)',
+          'اللغة الإنكليزية (وزاري)',
+          'الاجتماعيات (وزاري)',
+        ];
+      } else if (name.contains('رابع') || name.contains('خامس') || name.contains('4') || name.contains('5')) {
+        return [
+          'التربية الإسلامية',
+          'اللغة العربية',
+          'الرياضيات',
+          'العلوم',
+          'اللغة الإنكليزية',
+          'الاجتماعيات',
+          'التربية الفنية',
+          'التربية الرياضية',
+        ];
+      } else {
+        // الأول والثاني والثالث الابتدائي
+        return [
+          'التربية الإسلامية',
+          'قراءتي',
+          'الرياضيات',
+          'العلوم',
+          'اللغة الإنكليزية',
+          'التربية الأخلاقية',
+          'التربية الرياضية',
+          'التربية الفنية',
+        ];
+      }
+    }
+
+    // 2. المرحلة المتوسطة (الأول والثاني والثالث متوسط)
+    if (name.contains('متوسط')) {
+      if (name.contains('ثالث') || name.contains('3') || name.contains('وزاري')) {
+        return [
+          'التربية الإسلامية (وزاري)',
+          'اللغة العربية (وزاري)',
+          'اللغة الإنكليزية (وزاري)',
+          'الرياضيات (وزاري)',
+          'الاجتماعيات (وزاري)',
+          'الأحياء (وزاري)',
+          'الكيمياء (وزاري)',
+          'الفيزياء (وزاري)',
+        ];
+      } else {
+        return [
+          'التربية الإسلامية',
+          'اللغة العربية',
+          'اللغة الإنكليزية',
+          'الرياضيات',
+          'العلوم',
+          'الاجتماعيات',
+          'الحاسوب',
+          'التربية الأخلاقية',
+          'التربية الفنية',
+          'التربية الرياضية',
+        ];
+      }
+    }
+
+    // 3. المرحلة الإعدادية الأكاديمية (علمي / أدبي)
+    if (name.contains('علمي') ||
+        name.contains('أدبي') ||
+        (!name.contains('مهن') && !name.contains('صناع') && (name.contains('إعداد') || name.contains('اعداد')))) {
+      if (name.contains('أدبي') || name.contains('ادبي')) {
+        if (name.contains('سادس') || name.contains('6') || name.contains('وزاري')) {
+          return [
+            'التربية الإسلامية (وزاري)',
+            'اللغة العربية (وزاري)',
+            'اللغة الإنكليزية (وزاري)',
+            'الرياضيات (وزاري)',
+            'التاريخ (وزاري)',
+            'الجغرافية (وزاري)',
+            'الاقتصاد (وزاري)',
+          ];
+        } else if (name.contains('خامس') || name.contains('5')) {
+          return [
+            'التربية الإسلامية',
+            'اللغة العربية',
+            'اللغة الإنكليزية',
+            'الرياضيات',
+            'التاريخ',
+            'الجغرافية',
+            'الفلسفة وعلم النفس',
+            'الحاسوب',
+          ];
+        } else {
+          return [
+            'التربية الإسلامية',
+            'اللغة العربية',
+            'اللغة الإنكليزية',
+            'الرياضيات',
+            'التاريخ',
+            'الجغرافية',
+            'علم الاجتماع',
+            'الحاسوب',
+          ];
+        }
+      } else {
+        // الفرع العلمي
+        if (name.contains('سادس') || name.contains('6') || name.contains('وزاري')) {
+          return [
+            'التربية الإسلامية (وزاري)',
+            'اللغة العربية (وزاري)',
+            'اللغة الإنكليزية (وزاري)',
+            'الرياضيات (وزاري)',
+            'الأحياء (وزاري)',
+            'الكيمياء (وزاري)',
+            'الفيزياء (وزاري)',
+          ];
+        } else {
+          return [
+            'التربية الإسلامية',
+            'اللغة العربية',
+            'اللغة الإنكليزية',
+            'الرياضيات',
+            'الفيزياء',
+            'الكيمياء',
+            'الأحياء',
+            'الحاسوب',
+          ];
+        }
+      }
+    }
+
+    // 4. التعليم المهني (وفق جدول إعدادية كركوك المهنية وأقسامها)
+    if (name.contains('مهني') ||
+        name.contains('صناعي') ||
+        name.contains('ورش') ||
+        name.contains('قسم') ||
+        name.contains('سيبراني') ||
+        name.contains('حاسوب') ||
+        name.contains('كهرباء') ||
+        name.contains('ميكانيك') ||
+        name.contains('سيارات') ||
+        name.contains('الكترون') ||
+        name.contains('إلكترون') ||
+        name.contains('تبريد') ||
+        name.contains('تكييف') ||
+        name.contains('بناء') ||
+        name.contains('اتصالات') ||
+        name.contains('طبي') ||
+        name.contains('نجار') ||
+        name.contains('نفط') ||
+        name.contains('لحام') ||
+        name.contains('بترو')) {
       final isThird = name.contains('ثالث') || name.contains('3');
       final isSecond = name.contains('ثاني') || name.contains('2');
 
@@ -466,70 +616,14 @@ class HomeworkService {
       }
     }
 
-    // المرحلة المتوسطة
-    if (name.contains('متوسط')) {
-      if (name.contains('ثالث') || name.contains('3')) {
-        return [
-          'الاسلامية',
-          'العربية',
-          'الانكليزية',
-          'الاجتماعيات',
-          'الرياضيات',
-          'الاحياء',
-          'الفيزياء',
-          'الكيمياء',
-          'الفنية',
-          'الرياضة',
-        ];
-      } else {
-        // صف أول وثاني متوسط
-        return [
-          'الاسلامية',
-          'العربية',
-          'الانكليزية',
-          'الاجتماعيات',
-          'الرياضيات',
-          'الاحياء',
-          'الفيزياء',
-          'الكيمياء',
-          'الاخلاقية',
-          'الفنية',
-          'الرياضة',
-        ];
-      }
-    }
-
-    // المرحلة الابتدائية
-    if (name.contains('اول') ||
-        name.contains('أول') ||
-        name.contains('ثاني') ||
-        name.contains('ثالث') ||
-        name.contains('1') ||
-        name.contains('2') ||
-        name.contains('3')) {
-      return [
-        'التربية الاسلامية',
-        'القراءة',
-        'الرياضيات',
-        'العلوم',
-        'اللغة الانكليزية',
-        'الاخلاقيه',
-        'التربية الرياضية',
-        'التربية الفنية',
-      ];
-    } else {
-      // الافتراضي للتعليم المهني والإعدادي
-      return [
-        'التربية الإسلامية',
-        'اللغة العربية',
-        'اللغة الإنكليزية',
-        'الرياضيات التطبيقية',
-        'الطبيعيات',
-        'العلوم الصناعية التخصصية',
-        'التدريب العملي والورش',
-        'الرسم الهندسي والصناعي',
-      ];
-    }
+    // الافتراضي العام
+    return [
+      'التربية الإسلامية',
+      'اللغة العربية',
+      'اللغة الإنكليزية',
+      'الرياضيات',
+      'العلوم',
+    ];
   }
 
   // Get classes for a specific school (with automatic provisioning for vocational & new schools)
@@ -545,7 +639,25 @@ class HomeworkService {
 
       final list = (response as List).map((e) => SchoolClass.fromJson(e)).toList();
       if (list.isNotEmpty) {
-        return list;
+        // تنقية وإزالة التكرار لضمان عدم تكرار أي صف في أي قسم مطلقاً
+        final seenClassKeys = <String>{};
+        final List<SchoolClass> uniqueClasses = [];
+        for (final c in list) {
+          final cleanKey = c.name
+              .replaceAll('(وزاري)', '')
+              .replaceAll('(بكالوريا)', '')
+              .replaceAll('  ', ' ')
+              .trim();
+          if (!seenClassKeys.contains(cleanKey) || c.name.contains('وزاري') || c.name.contains('بكالوريا')) {
+            if (seenClassKeys.contains(cleanKey)) {
+              uniqueClasses.removeWhere((item) =>
+                  item.name.replaceAll('(وزاري)', '').replaceAll('(بكالوريا)', '').trim() == cleanKey);
+            }
+            seenClassKeys.add(cleanKey);
+            uniqueClasses.add(c);
+          }
+        }
+        return uniqueClasses;
       }
     } catch (_) {}
 
