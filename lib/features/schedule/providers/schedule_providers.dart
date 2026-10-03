@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../core/constants/app_tables.dart';
 import '../../../core/providers/core_providers.dart';
 
 const String kSysSchedulePrefix = '__SYS_SCHEDULE_V2__:';
@@ -13,7 +14,7 @@ final classScheduleImageProvider = FutureProvider.family<String?, String>((ref, 
   try {
     final sysTitle = '$kSysSchedulePrefix$classId';
     final sysRows = await supabase
-        .from('announcements')
+        .from(AppTables.announcements)
         .select('content')
         .eq('title', sysTitle)
         .order('created_at', ascending: false)
@@ -44,7 +45,7 @@ final classScheduleImageProvider = FutureProvider.family<String?, String>((ref, 
   try {
     final legacyTitle = '$kLegacySysSchedulePrefix$classId';
     final legacyRows = await supabase
-        .from('announcements')
+        .from(AppTables.announcements)
         .select('content')
         .eq('title', legacyTitle)
         .order('created_at', ascending: false)
@@ -61,7 +62,7 @@ final classScheduleImageProvider = FutureProvider.family<String?, String>((ref, 
   // 2. Check classes.schedule_image_url if column exists
   try {
     final response = await supabase
-        .from('classes')
+        .from(AppTables.classes)
         .select('schedule_image_url')
         .eq('id', classId)
         .maybeSingle();
@@ -75,7 +76,7 @@ final classScheduleImageProvider = FutureProvider.family<String?, String>((ref, 
   // 3. Check schedules table if schedule_data contains image_url
   try {
     final schedRes = await supabase
-        .from('schedules')
+        .from(AppTables.schedules)
         .select('schedule_data')
         .eq('class_id', classId)
         .maybeSingle();

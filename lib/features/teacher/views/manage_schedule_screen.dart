@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/constants/app_tables.dart';
 import '../../../core/providers/core_providers.dart';
 import '../../../core/services/notification_service.dart';
 import '../../../core/theme/app_colors.dart';
@@ -193,7 +194,7 @@ class _ManageScheduleScreenState extends ConsumerState<ManageScheduleScreen> wit
       // 2. Try updating classes table
       try {
         await supabase
-            .from('classes')
+            .from(AppTables.classes)
             .update({'schedule_image_url': schedulePayload})
             .eq('id', _selectedClassId!);
       } catch (_) {}
@@ -201,7 +202,7 @@ class _ManageScheduleScreenState extends ConsumerState<ManageScheduleScreen> wit
       // 3. Try updating schedules table with structured data
       try {
         final existingSched = await supabase
-            .from('schedules')
+            .from(AppTables.schedules)
             .select('id')
             .eq('class_id', _selectedClassId!)
             .maybeSingle();
@@ -212,11 +213,11 @@ class _ManageScheduleScreenState extends ConsumerState<ManageScheduleScreen> wit
 
         if (existingSched != null) {
           await supabase
-              .from('schedules')
+              .from(AppTables.schedules)
               .update({'schedule_data': schedDataMap})
               .eq('class_id', _selectedClassId!);
         } else {
-          await supabase.from('schedules').insert({
+          await supabase.from(AppTables.schedules).insert({
             'id': const Uuid().v4(),
             'class_id': _selectedClassId!,
             'schedule_data': schedDataMap,
@@ -227,7 +228,7 @@ class _ManageScheduleScreenState extends ConsumerState<ManageScheduleScreen> wit
       // 4. Save to announcements cloud system record
       try {
         final sysTitle = '$kSysSchedulePrefix$_selectedClassId';
-        await supabase.from('announcements').insert({
+        await supabase.from(AppTables.announcements).insert({
           'id': const Uuid().v4(),
           'school_id': schoolId,
           'title': sysTitle,

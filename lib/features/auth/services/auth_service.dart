@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/constants/app_tables.dart';
 import '../models/school.dart';
 
 class AuthService {
@@ -25,7 +26,7 @@ class AuthService {
 
     try {
       final response = await _supabase
-          .from('schools')
+          .from(AppTables.schools)
           .select()
           .ilike('school_code', cleanCode)
           .maybeSingle();
@@ -62,7 +63,7 @@ class AuthService {
 
     try {
       final byId = await _supabase
-          .from('schools')
+          .from(AppTables.schools)
           .select()
           .eq('id', clean)
           .maybeSingle();
@@ -70,7 +71,7 @@ class AuthService {
         return School.fromJson(byId);
       }
       final byCode = await _supabase
-          .from('schools')
+          .from(AppTables.schools)
           .select()
           .ilike('school_code', clean)
           .maybeSingle();
@@ -99,7 +100,7 @@ class AuthService {
     // 2. Check pre-assigned school in school_teachers table (Admin Assignment)
     try {
       final assignedRow = await _supabase
-          .from('school_teachers')
+          .from(AppTables.schoolTeachers)
           .select('school_code')
           .ilike('email', cleanEmail)
           .maybeSingle();
@@ -138,7 +139,7 @@ class AuthService {
     final sysTitle = '$_sysTeacherSchoolPrefix$cleanEmail';
     try {
       final rows = await _supabase
-          .from('announcements')
+          .from(AppTables.announcements)
           .select('content')
           .eq('title', sysTitle)
           .order('created_at', ascending: false)
@@ -191,7 +192,7 @@ class AuthService {
       } catch (_) {}
 
       try {
-        await _supabase.from('announcements').insert({
+        await _supabase.from(AppTables.announcements).insert({
           'id': const Uuid().v4(),
           'school_id': school.id,
           'title': sysTitle,

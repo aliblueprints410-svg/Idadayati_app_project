@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/constants/app_tables.dart';
 import '../models/announcement.dart';
 import '../models/comment.dart';
 
@@ -72,7 +73,7 @@ class AnnouncementService {
       final cleanSchoolId = AppConstants.sanitizeSchoolId(schoolId);
       final sysTitle = '$_sysDeletedAnnPrefix$cleanSchoolId';
       final sysRows = await _supabase
-          .from('announcements')
+          .from(AppTables.announcements)
           .select('content')
           .eq('title', sysTitle)
           .order('created_at', ascending: false)
@@ -101,7 +102,7 @@ class AnnouncementService {
       final deletedIds = await getDeletedAnnouncementIds(cleanSchoolId);
 
       final response = await _supabase
-          .from('announcements')
+          .from(AppTables.announcements)
           .select()
           .eq('school_id', cleanSchoolId)
           .eq('is_deleted', false)
@@ -138,7 +139,7 @@ class AnnouncementService {
 
     try {
       final stream = _supabase
-          .from('announcements')
+          .from(AppTables.announcements)
           .stream(primaryKey: ['id'])
           .eq('school_id', cleanSchoolId)
           .order('created_at', ascending: false)
@@ -156,7 +157,7 @@ class AnnouncementService {
   // Add announcement (Teacher)
   Future<void> addAnnouncement(Announcement announcement) async {
     try {
-      await _supabase.from('announcements').insert(announcement.toJson());
+      await _supabase.from(AppTables.announcements).insert(announcement.toJson());
     } catch (e) {
       throw Exception('فشل في نشر الإعلان: $e');
     }
@@ -182,7 +183,7 @@ class AnnouncementService {
     // 1. Try standard soft delete
     try {
       await _supabase
-          .from('announcements')
+          .from(AppTables.announcements)
           .update({'is_deleted': true})
           .eq('id', id);
     } catch (_) {}
@@ -190,7 +191,7 @@ class AnnouncementService {
     // 2. Insert append-only cloud deletion snapshot so all students & teachers sync immediately
     try {
       final sysTitle = '$_sysDeletedAnnPrefix$cleanSchoolId';
-      await _supabase.from('announcements').insert({
+      await _supabase.from(AppTables.announcements).insert({
         'id': const Uuid().v4(),
         'school_id': cleanSchoolId,
         'title': sysTitle,
@@ -228,7 +229,7 @@ class AnnouncementService {
     // 2. Load from announcement_comments table
     try {
       final response = await _supabase
-          .from('announcement_comments')
+          .from(AppTables.announcementComments)
           .select()
           .eq('announcement_id', announcementId)
           .order('created_at', ascending: true);
@@ -245,7 +246,7 @@ class AnnouncementService {
     try {
       final sysTitle = '$_sysCommentsPrefix$announcementId';
       final sysRows = await _supabase
-          .from('announcements')
+          .from(AppTables.announcements)
           .select('content')
           .eq('title', sysTitle)
           .order('created_at', ascending: false)
@@ -276,7 +277,7 @@ class AnnouncementService {
 
     try {
       final stream = _supabase
-          .from('announcement_comments')
+          .from(AppTables.announcementComments)
           .stream(primaryKey: ['id'])
           .eq('announcement_id', announcementId)
           .order('created_at', ascending: true)
@@ -314,7 +315,7 @@ class AnnouncementService {
     // 2. Try direct insert into announcement_comments
     final data = Map<String, dynamic>.from(normalizedComment.toJson());
     try {
-      await _supabase.from('announcement_comments').insert(data);
+      await _supabase.from(AppTables.announcementComments).insert(data);
     } catch (e) {
       debugPrint('[AnnouncementService] Direct comment insert fallback: $e');
     }
@@ -395,7 +396,7 @@ class AnnouncementService {
     } catch (_) {}
 
     try {
-      await _supabase.from('announcement_comments').delete().eq('id', commentId);
+      await _supabase.from(AppTables.announcementComments).delete().eq('id', commentId);
     } catch (_) {}
 
     if (announcementId != null) {

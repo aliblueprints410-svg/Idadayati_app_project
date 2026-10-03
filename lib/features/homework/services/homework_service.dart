@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/constants/app_tables.dart';
 import '../../../core/utils/arabic_day_helper.dart';
 import '../models/homework.dart';
 import '../models/school_class.dart';
@@ -154,7 +155,7 @@ class HomeworkService {
 
     try {
       final response = await _supabase
-          .from('classes')
+          .from(AppTables.classes)
           .select()
           .eq('school_id', cleanSchoolId)
           .order('order', ascending: true);
@@ -206,7 +207,7 @@ class HomeworkService {
     }
 
     try {
-      await _supabase.from('classes').insert(toInsertVocational);
+      await _supabase.from(AppTables.classes).insert(toInsertVocational);
     } catch (_) {}
 
     return vocationalClasses;
@@ -229,7 +230,7 @@ class HomeworkService {
     try {
       final sysTitle = '$_sysSubjectsPrefix$classId';
       final sysRows = await _supabase
-          .from('announcements')
+          .from(AppTables.announcements)
           .select('content, created_at')
           .eq('title', sysTitle)
           .order('created_at', ascending: false)
@@ -268,7 +269,7 @@ class HomeworkService {
     // 3. Query subjects table in Supabase
     try {
       final response = await _supabase
-          .from('subjects')
+          .from(AppTables.subjects)
           .select()
           .eq('class_id', classId);
 
@@ -299,7 +300,7 @@ class HomeworkService {
     } else {
       try {
         final cRes = await _supabase
-            .from('classes')
+            .from(AppTables.classes)
             .select('name')
             .eq('id', classId)
             .maybeSingle();
@@ -374,7 +375,7 @@ class HomeworkService {
     // 2. Sync to cloud via append-only INSERT into announcements
     try {
       final sysTitle = '$_sysSubjectsPrefix$classId';
-      await _supabase.from('announcements').insert({
+      await _supabase.from(AppTables.announcements).insert({
         'id': const Uuid().v4(),
         'school_id': schoolId,
         'title': sysTitle,
@@ -401,7 +402,7 @@ class HomeworkService {
     );
 
     try {
-      await _supabase.from('subjects').insert({
+      await _supabase.from(AppTables.subjects).insert({
         'id': newSubject.id,
         'class_id': classId,
         'name': trimmed,
@@ -436,7 +437,7 @@ class HomeworkService {
 
     try {
       await _supabase
-          .from('subjects')
+          .from(AppTables.subjects)
           .update({'name': trimmed})
           .eq('id', subjectId);
     } catch (e) {
@@ -452,7 +453,7 @@ class HomeworkService {
     final updated = current.where((s) => s.id != subjectId).toList();
 
     try {
-      await _supabase.from('subjects').delete().eq('id', subjectId);
+      await _supabase.from(AppTables.subjects).delete().eq('id', subjectId);
     } catch (e) {
       debugPrint('[HomeworkService] Direct deleteSubject fallback: $e');
     }
@@ -471,7 +472,7 @@ class HomeworkService {
     } else {
       try {
         final classRes = await _supabase
-            .from('classes')
+            .from(AppTables.classes)
             .select('name')
             .eq('id', classId)
             .maybeSingle();
@@ -501,7 +502,7 @@ class HomeworkService {
     List<Subject> dbSubjects = [];
     try {
       final response = await _supabase
-          .from('subjects')
+          .from(AppTables.subjects)
           .select()
           .eq('class_id', classId);
       dbSubjects = (response as List).map((e) => Subject.fromJson(e)).toList();
@@ -530,7 +531,7 @@ class HomeworkService {
 
     if (toInsert.isNotEmpty) {
       try {
-        await _supabase.from('subjects').insert(toInsert);
+        await _supabase.from(AppTables.subjects).insert(toInsert);
       } catch (e) {
         debugPrint('[HomeworkService] Direct seedDefaultSubjects fallback: $e');
       }
@@ -575,7 +576,7 @@ class HomeworkService {
     try {
       final sysTitle = '$_sysResetYearPrefix$cleanSchoolId';
       final rows = await _supabase
-          .from('announcements')
+          .from(AppTables.announcements)
           .select('content')
           .eq('title', sysTitle)
           .order('created_at', ascending: false)
@@ -616,7 +617,7 @@ class HomeworkService {
       if (classes.isNotEmpty) {
         final classIds = classes.map((c) => c.id).toList();
         final dbSubs = await _supabase
-            .from('subjects')
+            .from(AppTables.subjects)
             .select('id')
             .inFilter('class_id', classIds);
         for (final row in (dbSubs as List)) {
@@ -647,7 +648,7 @@ class HomeworkService {
 
     try {
       final hwRes = await _supabase
-          .from('homework')
+          .from(AppTables.homework)
           .select()
           .eq('is_deleted', false);
       for (final e in (hwRes as List)) {
@@ -661,7 +662,7 @@ class HomeworkService {
 
     try {
       final sysRows = await _supabase
-          .from('announcements')
+          .from(AppTables.announcements)
           .select('content')
           .like('title', '$_sysHomeworkPrefix%')
           .order('created_at', ascending: false)
@@ -714,7 +715,7 @@ class HomeworkService {
 
     try {
       final hwRes = await _supabase
-          .from('homework')
+          .from(AppTables.homework)
           .select()
           .eq('is_deleted', false)
           .order('created_at', ascending: false);
@@ -730,7 +731,7 @@ class HomeworkService {
 
     try {
       final sysRows = await _supabase
-          .from('announcements')
+          .from(AppTables.announcements)
           .select('content')
           .like('title', '$_sysHomeworkPrefix%')
           .order('created_at', ascending: false)
@@ -773,7 +774,7 @@ class HomeworkService {
 
     try {
       final hwRes = await _supabase
-          .from('homework')
+          .from(AppTables.homework)
           .select()
           .eq('is_deleted', false)
           .eq('is_current', true)
@@ -790,7 +791,7 @@ class HomeworkService {
 
     try {
       final sysRows = await _supabase
-          .from('announcements')
+          .from(AppTables.announcements)
           .select('content')
           .like('title', '$_sysHomeworkPrefix%')
           .order('created_at', ascending: false)
@@ -837,7 +838,7 @@ class HomeworkService {
     try {
       final sysTitle = '$_sysHomeworkPrefix$subjectId';
       final sysRows = await _supabase
-          .from('announcements')
+          .from(AppTables.announcements)
           .select('content')
           .eq('title', sysTitle)
           .order('created_at', ascending: false)
@@ -870,7 +871,7 @@ class HomeworkService {
 
     try {
       final sysTitle = '$_sysHomeworkPrefix$subjectId';
-      await _supabase.from('announcements').insert({
+      await _supabase.from(AppTables.announcements).insert({
         'id': const Uuid().v4(),
         'school_id': schoolId,
         'title': sysTitle,
@@ -891,7 +892,7 @@ class HomeworkService {
 
     try {
       final res = await _supabase
-          .from('homework')
+          .from(AppTables.homework)
           .select()
           .eq('subject_id', subjectId)
           .eq('is_current', true)
@@ -933,7 +934,7 @@ class HomeworkService {
 
     try {
       final res = await _supabase
-          .from('homework')
+          .from(AppTables.homework)
           .select()
           .eq('subject_id', subjectId)
           .eq('is_deleted', false)
@@ -969,7 +970,7 @@ class HomeworkService {
   // Add homework (Teacher)
   Future<void> addHomework(Homework homework) async {
     try {
-      await _supabase.from('homework').insert(homework.toJson());
+      await _supabase.from(AppTables.homework).insert(homework.toJson());
       return;
     } catch (e) {
       if (e.toString().contains('deadline') || e.toString().contains('PGRST204')) {
@@ -980,7 +981,7 @@ class HomeworkService {
             final fullDeadlineStr = ArabicDayHelper.formatFullDayDateTime(homework.deadline!);
             data['description'] = '${homework.description}\n\n📅 موعد التسليم: $fullDeadlineStr';
           }
-          await _supabase.from('homework').insert(data);
+          await _supabase.from(AppTables.homework).insert(data);
           return;
         } catch (innerError) {
           debugPrint('[HomeworkService] Fallback homework insert notice: $innerError');
@@ -1025,7 +1026,7 @@ class HomeworkService {
     } catch (_) {}
 
     try {
-      await _supabase.from('announcements').insert({
+      await _supabase.from(AppTables.announcements).insert({
         'id': const Uuid().v4(),
         'school_id': cleanSchoolId,
         'title': '$_sysResetYearPrefix$cleanSchoolId',
@@ -1040,13 +1041,13 @@ class HomeworkService {
     if (schoolSubjectIds.isNotEmpty) {
       try {
         await _supabase
-            .from('homework')
+            .from(AppTables.homework)
             .update({'is_deleted': true})
             .inFilter('subject_id', schoolSubjectIds.toList());
       } catch (_) {}
       try {
         await _supabase
-            .from('homework')
+            .from(AppTables.homework)
             .delete()
             .inFilter('subject_id', schoolSubjectIds.toList());
       } catch (_) {}
@@ -1056,7 +1057,7 @@ class HomeworkService {
   // Delete homework (Soft delete in DB and purge from fallback / local storage)
   Future<void> deleteHomework(String id, {String? subjectId}) async {
     try {
-      await _supabase.from('homework').update({'is_deleted': true}).eq('id', id);
+      await _supabase.from(AppTables.homework).update({'is_deleted': true}).eq('id', id);
     } catch (e) {
       debugPrint('[HomeworkService] deleteHomework DB notice: $e');
     }
