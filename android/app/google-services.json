@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "550528832813",
+    "project_id": "madrasati-app-320ab",
+    "storage_bucket": "madrasati-app-320ab.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:550528832813:android:3d47c75c748746b869afa4",
+        "android_client_info": {
+          "package_name": "madrasati.alibp.com"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD2CZLM8gs6aG3nhtZ9C2N45G1navEQD6E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

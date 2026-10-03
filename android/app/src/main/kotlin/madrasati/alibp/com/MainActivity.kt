@@ -1,4 +1,4 @@
-package com.alibp.madrasati
+package madrasati.alibp.com
 
 import io.flutter.embedding.android.FlutterFragmentActivity
 
