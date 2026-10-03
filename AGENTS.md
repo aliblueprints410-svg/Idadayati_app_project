@@ -5,7 +5,7 @@ This repository follows strict guidelines set by the product owner. Any AI agent
 ---
 
 ## 1. Identity & Rebranding
-* **App Name:** Moving to **«تطبيق طالب»** (Talib App) while strictly retaining the exact same logo and application icon.
+* **App Name:** Moving to **«تطبيق مدرستي»** (Madrasati App) while strictly retaining the exact same logo and application icon.
 * **Scope:** The platform caters to schools across Iraq:
   1. Primary Schools (ابتدائية)
   2. Middle Schools (متوسطة)

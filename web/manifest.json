@@ -1,11 +1,11 @@
 {
-    "name": "تطبيق طالب - Taleb App",
-    "short_name": "طالب",
+    "name": "تطبيق مدرستي - Madrasati App",
+    "short_name": "مدرستي",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#FFFFFF",
     "theme_color": "#1E40AF",
-    "description": "تطبيق طالب - المنصة التعليمية الذكية لكافة المراحل الدراسية",
+    "description": "تطبيق مدرستي - المنصة التعليمية الذكية لكافة المراحل الدراسية",
     "orientation": "portrait",
     "prefer_related_applications": false,
     "icons": [

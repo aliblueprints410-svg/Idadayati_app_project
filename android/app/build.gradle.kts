@@ -45,7 +45,7 @@ android {
     applicationVariants.all {
         outputs.all {
             val output = this as? com.android.build.gradle.internal.api.BaseVariantOutputImpl
-            output?.outputFileName = if (name == "release") "Idadayati.apk" else "Idadayati-${name}.apk"
+            output?.outputFileName = if (name == "release") "Madrasati.apk" else "Madrasati-${name}.apk"
         }
     }
 }

@@ -1,7 +1,7 @@
 class AppConstants {
-  static const String appName = 'طالب';
+  static const String appName = 'مدرستي';
   static const String appVersion = 'v 1.0.0';
-  static const String appTagline = 'المنصة التعليمية الذكية لكافة المراحل الدراسية';
+  static const String appTagline = 'المنصة الذكية للتعليم والتواصل المدرسي';
 
   // Kirkuk Vocational Preparatory School (إعدادية كركوك المهنية)
   static const String kirkukVocSchoolId = 'f8e7d6c5-b4a3-4210-9876-543210abcdef';
