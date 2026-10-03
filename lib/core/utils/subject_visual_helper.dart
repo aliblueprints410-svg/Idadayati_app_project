@@ -7,7 +7,7 @@ class SubjectVisualHelper {
   static IconData getSubjectIcon(String subjectName) {
     final s = subjectName.trim().toLowerCase();
 
-    // 1. التربية الإسلامية والقرآن الكريم
+    // 1. التربية الإسلامية والقرآن الكريم (رمز المصحف الشريف والكتاب الوقور)
     if (s.contains('اسلامية') ||
         s.contains('إسلامية') ||
         s.contains('اسلاميه') ||
@@ -21,10 +21,10 @@ class SubjectVisualHelper {
         s.contains('تفسير') ||
         s.contains('توحيد') ||
         s.contains('تلاوة')) {
-      return Icons.mosque_rounded;
+      return Icons.menu_book_rounded;
     }
 
-    // 2. القراءة واللغة العربية والأدب
+    // 2. اللغة العربية والأدب والبلاغة (رمز قلم الحبر والمخطوطة الأدبية الراقية)
     if (s.contains('قراءة') ||
         s.contains('قراءه') ||
         s.contains('عربي') ||
@@ -41,7 +41,7 @@ class SubjectVisualHelper {
         s.contains('بلاغة') ||
         s.contains('أدب') ||
         s.contains('ادب')) {
-      return Icons.auto_stories_rounded;
+      return Icons.history_edu_rounded;
     }
 
     // 3. الرياضيات والجبر والهندسة
@@ -153,9 +153,44 @@ class SubjectVisualHelper {
       return Icons.music_note_rounded;
     }
 
-    // 12. المهارات الحياتية أو المهنية
+    // 12. الأمن السيبراني والشبكات والحماية
+    if (s.contains('سيبراني') || s.contains('أمن') || s.contains('شبكات') || s.contains('security')) {
+      return Icons.security_rounded;
+    }
+
+    // 13. النفط والتكرير والبتروكيمياويات
+    if (s.contains('نفط') || s.contains('تكرير') || s.contains('بتروكيمياو') || s.contains('بترول')) {
+      return Icons.local_gas_station_rounded;
+    }
+
+    // 14. اللحام والمعادن
+    if (s.contains('لحام') || s.contains('معادن')) {
+      return Icons.hardware_rounded;
+    }
+
+    // 15. النجارة والديكور الخشبي
+    if (s.contains('نجارة') || s.contains('نجاره') || s.contains('خشب')) {
+      return Icons.carpenter_rounded;
+    }
+
+    // 16. التكييف والتبريد
+    if (s.contains('تكييف') || s.contains('تبريد')) {
+      return Icons.ac_unit_rounded;
+    }
+
+    // 17. البناء والإنشاءات والرسم الهندسي
+    if (s.contains('بناء') || s.contains('إنشاء') || s.contains('انشاء') || s.contains('رسم')) {
+      return Icons.architecture_rounded;
+    }
+
+    // 18. التدريب العملي والورش والميكانيك
+    if (s.contains('عملي') || s.contains('ورش') || s.contains('ميكانيك') || s.contains('صناعي')) {
+      return Icons.precision_manufacturing_rounded;
+    }
+
+    // 19. المهارات الحياتية أو المهنية
     if (s.contains('مهارات') || s.contains('مهني')) {
-      return Icons.handyman_rounded;
+      return Icons.engineering_rounded;
     }
 
     return Icons.school_rounded;

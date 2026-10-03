@@ -26,7 +26,7 @@ class GradeSelectionScreen extends ConsumerStatefulWidget {
 }
 
 class _GradeSelectionScreenState extends ConsumerState<GradeSelectionScreen> {
-  String _selectedDepartment = 'تكنولوجيا المعلومات والحاسوب';
+  String _selectedDepartment = 'ميكانيك';
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
@@ -39,15 +39,15 @@ class _GradeSelectionScreenState extends ConsumerState<GradeSelectionScreen> {
   }
 
   static const List<Map<String, dynamic>> _vocationalDepartments = [
-    {'name': 'تكنولوجيا المعلومات والحاسوب', 'icon': Icons.computer_rounded, 'color': Color(0xFF1E40AF)},
-    {'name': 'الكهرباء', 'icon': Icons.bolt_rounded, 'color': Color(0xFFD97706)},
-    {'name': 'الميكانيك', 'icon': Icons.settings_suggest_rounded, 'color': Color(0xFFB45309)},
-    {'name': 'السيارات', 'icon': Icons.directions_car_rounded, 'color': Color(0xFF0369A1)},
-    {'name': 'الإلكترونيك والسيطرة', 'icon': Icons.memory_rounded, 'color': Color(0xFF4338CA)},
-    {'name': 'التبريد والتكييف', 'icon': Icons.ac_unit_rounded, 'color': Color(0xFF0F766E)},
-    {'name': 'البناء والإنشاءات', 'icon': Icons.foundation_rounded, 'color': Color(0xFF047857)},
-    {'name': 'الاتصالات', 'icon': Icons.cell_tower_rounded, 'color': Color(0xFF1D4ED8)},
-    {'name': 'الأجهزة الطبية', 'icon': Icons.medical_services_rounded, 'color': Color(0xFFBE123C)},
+    {'name': 'ميكانيك', 'icon': Icons.precision_manufacturing_rounded, 'color': Color(0xFFB45309)},
+    {'name': 'أمن سيبراني', 'icon': Icons.security_rounded, 'color': Color(0xFF1E40AF)},
+    {'name': 'نجارة', 'icon': Icons.carpenter_rounded, 'color': Color(0xFF854D0E)},
+    {'name': 'بناء', 'icon': Icons.architecture_rounded, 'color': Color(0xFF047857)},
+    {'name': 'حاسوب', 'icon': Icons.computer_rounded, 'color': Color(0xFF2563EB)},
+    {'name': 'تكييف', 'icon': Icons.ac_unit_rounded, 'color': Color(0xFF0F766E)},
+    {'name': 'تكرير نفط', 'icon': Icons.factory_rounded, 'color': Color(0xFF475569)},
+    {'name': 'لحام', 'icon': Icons.hardware_rounded, 'color': Color(0xFFDC2626)},
+    {'name': 'بتروكيمياوي', 'icon': Icons.science_rounded, 'color': Color(0xFF7C3AED)},
   ];
 
   @override
@@ -329,7 +329,7 @@ class _GradeSelectionScreenState extends ConsumerState<GradeSelectionScreen> {
                               TextButton(
                                 onPressed: () {
                                   setState(() {
-                                    _selectedDepartment = 'تكنولوجيا المعلومات والحاسوب';
+                                    _selectedDepartment = 'ميكانيك';
                                     _searchController.clear();
                                     _searchQuery = '';
                                   });
