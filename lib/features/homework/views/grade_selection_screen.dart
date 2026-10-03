@@ -19,12 +19,11 @@ class GradeSelectionScreen extends ConsumerStatefulWidget {
 }
 
 class _GradeSelectionScreenState extends ConsumerState<GradeSelectionScreen> {
-  String _selectedDepartment = 'الكل';
+  String _selectedDepartment = 'تكنولوجيا المعلومات والحاسوب';
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
   static const List<Map<String, dynamic>> _vocationalDepartments = [
-    {'name': 'الكل', 'icon': Icons.apps_rounded, 'color': AppColors.primary},
     {'name': 'تكنولوجيا المعلومات والحاسوب', 'icon': Icons.computer_rounded, 'color': Color(0xFF1E40AF)},
     {'name': 'الكهرباء', 'icon': Icons.bolt_rounded, 'color': Color(0xFFD97706)},
     {'name': 'الميكانيك', 'icon': Icons.settings_suggest_rounded, 'color': Color(0xFFB45309)},
@@ -302,12 +301,12 @@ class _GradeSelectionScreenState extends ConsumerState<GradeSelectionScreen> {
                               TextButton(
                                 onPressed: () {
                                   setState(() {
-                                    _selectedDepartment = 'الكل';
+                                    _selectedDepartment = 'تكنولوجيا المعلومات والحاسوب';
                                     _searchController.clear();
                                     _searchQuery = '';
                                   });
                                 },
-                                child: const Text('عرض جميع التخصصات'),
+                                child: const Text('إعادة تعيين البحث'),
                               ),
                             ],
                           ),
@@ -381,7 +380,7 @@ class _GradeSelectionScreenState extends ConsumerState<GradeSelectionScreen> {
                                                 child: Icon(
                                                   isGrade12
                                                       ? Icons.military_tech_rounded
-                                                      : (isGrade11 ? Icons.build_circle_rounded : Icons.school_rounded),
+                                                      : (isGrade11 ? Icons.edit_rounded : Icons.school_rounded),
                                                   color: isGrade12 ? AppColors.gold : AppColors.primary,
                                                   size: 26,
                                                 ),
