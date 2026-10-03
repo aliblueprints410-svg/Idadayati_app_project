@@ -1,11 +1,11 @@
 {
-    "name": "تطبيق إعداديتي - Idadayati",
-    "short_name": "إعداديتي",
+    "name": "تطبيق طالب - Taleb App",
+    "short_name": "طالب",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#FFFFFF",
     "theme_color": "#1E40AF",
-    "description": "تطبيق إعداديتي - المنصة الذكية للتعليم المهني والإعدادي",
+    "description": "تطبيق طالب - المنصة التعليمية الذكية لكافة المراحل الدراسية",
     "orientation": "portrait",
     "prefer_related_applications": false,
     "icons": [
