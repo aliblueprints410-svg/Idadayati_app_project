@@ -121,13 +121,15 @@ class AnnouncementService {
       }
 
       return rows
-          .map((e) => Announcement.fromJson(e))
+          .map((e) => Announcement.fromJson(e as Map<String, dynamic>))
           .where((a) =>
+              !a.isDeleted &&
               !a.title.startsWith(_sysPrefix) &&
               !deletedIds.contains(a.id) &&
               (resetTs == null || !a.createdAt.toUtc().isBefore(resetTs)))
           .toList();
-    } catch (_) {
+    } catch (e, stack) {
+      debugPrint('[AnnouncementService] getAnnouncements error: $e\n$stack');
       return [];
     }
   }

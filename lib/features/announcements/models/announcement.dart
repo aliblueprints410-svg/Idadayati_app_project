@@ -17,15 +17,28 @@ class Announcement {
     required this.isDeleted,
   });
 
+  static bool _parseBool(dynamic val) {
+    if (val == null) return false;
+    if (val is bool) return val;
+    if (val is num) return val != 0;
+    if (val is String) {
+      final s = val.trim().toLowerCase();
+      return s == 'true' || s == '1' || s == 'urgent' || s == 'priority';
+    }
+    return false;
+  }
+
   factory Announcement.fromJson(Map<String, dynamic> json) {
     return Announcement(
-      id: json['id'] ?? '',
-      schoolId: json['school_id'] ?? '',
-      title: json['title'] ?? '',
-      content: json['content'] ?? '',
-      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : DateTime.now(),
-      priority: json['priority'] ?? false,
-      isDeleted: json['is_deleted'] ?? false,
+      id: (json['id'] ?? '').toString(),
+      schoolId: (json['school_id'] ?? '').toString(),
+      title: (json['title'] ?? '').toString(),
+      content: (json['content'] ?? '').toString(),
+      createdAt: json['created_at'] != null
+          ? (DateTime.tryParse(json['created_at'].toString()) ?? DateTime.now())
+          : DateTime.now(),
+      priority: _parseBool(json['priority']),
+      isDeleted: _parseBool(json['is_deleted']),
     );
   }
 
@@ -36,7 +49,7 @@ class Announcement {
       'title': title,
       'content': content,
       'created_at': createdAt.toIso8601String(),
-      'priority': priority,
+      'priority': priority ? 'true' : 'false',
       'is_deleted': isDeleted,
     };
   }
