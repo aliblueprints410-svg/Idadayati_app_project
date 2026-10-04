@@ -7,7 +7,7 @@ const String kSysSchedulePrefix = '__SYS_SCHEDULE_V2__:';
 const String kLegacySysSchedulePrefix = '__SYS_SCHEDULE__:';
 const String kLocalScheduleKeyPrefix = 'schedule_image_';
 
-final classScheduleImageProvider = FutureProvider.family<String?, String>((ref, classId) async {
+final classScheduleImageProvider = FutureProvider.autoDispose.family<String?, String>((ref, classId) async {
   final supabase = ref.watch(supabaseClientProvider);
 
   // 1. Check V2 cloud schedule record in announcements

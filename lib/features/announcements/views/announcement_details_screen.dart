@@ -146,6 +146,34 @@ class _AnnouncementDetailsScreenState extends ConsumerState<AnnouncementDetailsS
                               : (isDark ? Colors.white : const Color(0xFF0F172A)),
                         ),
                       ),
+                      if (widget.announcement.targetTag != null) ...[
+                        const SizedBox(height: 10),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: AppColors.secondary.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: AppColors.secondary.withValues(alpha: 0.25)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.gps_fixed_rounded, size: 14, color: AppColors.secondary),
+                              const SizedBox(width: 6),
+                              Flexible(
+                                child: Text(
+                                  'موجه إلى: ${widget.announcement.targetTag}',
+                                  style: const TextStyle(
+                                    color: AppColors.secondary,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 12),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -175,7 +203,7 @@ class _AnnouncementDetailsScreenState extends ConsumerState<AnnouncementDetailsS
                       ),
                       const SizedBox(height: 18),
                       Text(
-                        widget.announcement.content,
+                        widget.announcement.cleanContent,
                         style: TextStyle(
                           fontSize: 15,
                           height: 1.7,

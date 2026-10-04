@@ -40,4 +40,35 @@ class Announcement {
       'is_deleted': isDeleted,
     };
   }
+
+  /// Extracts target recipient badge if specified in the content header
+  String? get targetTag {
+    if (content.startsWith('📌 موجه إلى: ')) {
+      final endIdx = content.indexOf('\n\n');
+      if (endIdx != -1) {
+        return content.substring('📌 موجه إلى: '.length, endIdx).trim();
+      }
+      final lineEnd = content.indexOf('\n');
+      if (lineEnd != -1) {
+        return content.substring('📌 موجه إلى: '.length, lineEnd).trim();
+      }
+      return content.substring('📌 موجه إلى: '.length).trim();
+    }
+    return null;
+  }
+
+  /// Returns clean announcement text without internal target prefix
+  String get cleanContent {
+    if (content.startsWith('📌 موجه إلى: ')) {
+      final endIdx = content.indexOf('\n\n');
+      if (endIdx != -1) {
+        return content.substring(endIdx + 2).trim();
+      }
+      final lineEnd = content.indexOf('\n');
+      if (lineEnd != -1) {
+        return content.substring(lineEnd + 1).trim();
+      }
+    }
+    return content;
+  }
 }

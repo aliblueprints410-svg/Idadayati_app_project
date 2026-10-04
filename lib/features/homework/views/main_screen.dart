@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/constants/app_constants.dart';
+import '../../../core/providers/core_providers.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../announcements/providers/announcement_providers.dart';
+import '../../schedule/providers/schedule_providers.dart';
+import '../providers/homework_providers.dart';
 import 'subjects_tab.dart';
 import '../../announcements/views/announcements_tab.dart';
 import '../../schedule/views/schedule_tab.dart';
@@ -90,7 +95,22 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     final isSelected = _currentIndex == index;
 
     return InkWell(
-      onTap: () => setState(() => _currentIndex = index),
+      onTap: () {
+        setState(() => _currentIndex = index);
+        try {
+          final localStorage = ref.read(localStorageServiceProvider);
+          final schoolId = AppConstants.sanitizeSchoolId(localStorage.getSchoolCode());
+          final gradeId = localStorage.getSelectedGrade() ?? '';
+
+          if (index == 0 && gradeId.isNotEmpty) {
+            ref.invalidate(subjectsProvider(gradeId));
+          } else if (index == 1 && gradeId.isNotEmpty) {
+            ref.invalidate(classScheduleImageProvider(gradeId));
+          } else if (index == 2) {
+            ref.invalidate(announcementsProvider(schoolId));
+          }
+        } catch (_) {}
+      },
       borderRadius: BorderRadius.circular(16),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 250),

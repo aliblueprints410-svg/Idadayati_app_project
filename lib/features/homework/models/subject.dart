@@ -11,11 +11,22 @@ class Subject {
     this.icon,
   });
 
+  static String sanitizeSubjectName(String raw) {
+    return raw
+        .replaceAll(' - وزاري', '')
+        .replaceAll('- وزاري', '')
+        .replaceAll('(وزاري)', '')
+        .replaceAll('وزاري', '')
+        .replaceAll('(بكالوريا)', '')
+        .replaceAll('  ', ' ')
+        .trim();
+  }
+
   factory Subject.fromJson(Map<String, dynamic> json) {
     return Subject(
       id: json['id'] ?? '',
       classId: json['class_id'] ?? '',
-      name: json['name'] ?? '',
+      name: sanitizeSubjectName(json['name'] ?? ''),
       icon: json['icon'],
     );
   }

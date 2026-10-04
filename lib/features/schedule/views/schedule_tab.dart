@@ -200,28 +200,39 @@ class _ScheduleTabState extends ConsumerState<ScheduleTab> {
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 620),
-          child: scheduleAsync.when(
-            data: (rawContent) {
-              if (rawContent == null || rawContent.isEmpty) {
-                return _buildEmptyState(isDark);
-              }
-
-              final tableData = _tryParseTableData(rawContent);
-
-              if (tableData != null && tableData.isNotEmpty) {
-                return _buildInteractiveDashboard(tableData, isDark, hPadding);
-              }
-
-              return _buildImageView(rawContent, isDark);
+          child: RefreshIndicator(
+            onRefresh: () async {
+              ref.invalidate(classScheduleImageProvider(classId));
             },
-            loading: () => const Center(
-              child: SpinKitFadingCube(
-                color: AppColors.primary,
-                size: 40.0,
+            child: scheduleAsync.when(
+              data: (rawContent) {
+                if (rawContent == null || rawContent.isEmpty) {
+                  return _buildEmptyState(isDark);
+                }
+
+                final tableData = _tryParseTableData(rawContent);
+
+                if (tableData != null && tableData.isNotEmpty) {
+                  return _buildInteractiveDashboard(tableData, isDark, hPadding);
+                }
+
+                return _buildImageView(rawContent, isDark);
+              },
+              loading: () => const Center(
+                child: SpinKitFadingCube(
+                  color: AppColors.primary,
+                  size: 40.0,
+                ),
               ),
-            ),
-            error: (err, _) => Center(
-              child: Text('خطأ في جلب الجدول: $err'),
+              error: (err, _) => ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(32.0),
+                    child: Center(child: Text('خطأ في جلب الجدول: $err\nاسحب للأسفل لإعادة المحاولة')),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -230,34 +241,38 @@ class _ScheduleTabState extends ConsumerState<ScheduleTab> {
   }
 
   Widget _buildEmptyState(bool isDark) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.all(32.0),
+      children: [
+        SizedBox(height: MediaQuery.of(context).size.height * 0.15),
+        Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.calendar_month_outlined, size: 64, color: AppColors.primary),
               ),
-              child: const Icon(Icons.calendar_month_outlined, size: 64, color: AppColors.primary),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'لم يتم رفع جدول هذا الصف بعد',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'ستقوم إدارة المدرسة أو المعلم المسؤول برفع وتحديث الجدول قريباً.',
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
-              textAlign: TextAlign.center,
-            ),
-          ],
+              const SizedBox(height: 20),
+              const Text(
+                'لم يتم رفع جدول هذا الصف بعد',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'ستقوم إدارة المدرسة أو المعلم المسؤول برفع وتحديث الجدول قريباً.\nاسحب للأسفل للتحديث في أي وقت.',
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         ),
-      ),
+      ],
     );
   }
 

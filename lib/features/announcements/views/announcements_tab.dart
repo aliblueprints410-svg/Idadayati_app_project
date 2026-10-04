@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:intl/intl.dart';
 import 'package:timeago/timeago.dart' as timeago;
+import '../../../core/constants/app_constants.dart';
 import '../../../core/providers/core_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/shimmer_loading.dart';
+import '../models/announcement.dart';
 import '../providers/announcement_providers.dart';
 import 'announcement_details_screen.dart';
 
@@ -17,21 +19,67 @@ class AnnouncementsTab extends ConsumerStatefulWidget {
 }
 
 class _AnnouncementsTabState extends ConsumerState<AnnouncementsTab> {
+  String _filterMode = 'targeted'; // 'targeted' or 'all'
+
   @override
   void initState() {
     super.initState();
     timeago.setLocaleMessages('ar', timeago.ArMessages());
   }
 
+  bool _matchesStudent(Announcement ann, String? studentGradeName, String? studentDept) {
+    final tag = ann.targetTag;
+    if (tag == null || tag.contains('عام') || tag.contains('كافة')) {
+      return true;
+    }
+    if (studentGradeName == null && studentDept == null) {
+      return true;
+    }
+
+    bool stageMatches = true;
+    if (studentGradeName != null) {
+      final stages = ['الأول', 'الثاني', 'الثالث', 'الرابع', 'الخامس', 'السادس'];
+      for (final s in stages) {
+        if (tag.contains(s)) {
+          if (!studentGradeName.contains(s)) {
+            stageMatches = false;
+          }
+          break;
+        }
+      }
+    }
+
+    bool deptMatches = true;
+    final depts = [
+      'ميكانيك',
+      'أمن سيبراني',
+      'نجارة',
+      'بناء',
+      'حاسوب',
+      'تكييف',
+      'تكرير نفط',
+      'لحام',
+      'بتروكيمياوي',
+    ];
+    for (final d in depts) {
+      if (tag.contains(d)) {
+        if (studentDept == null || !studentDept.contains(d)) {
+          deptMatches = false;
+        }
+        break;
+      }
+    }
+
+    return stageMatches && deptMatches;
+  }
+
   @override
   Widget build(BuildContext context) {
     final localStorage = ref.watch(localStorageServiceProvider);
-    final schoolId = localStorage.getSchoolCode();
+    final schoolId = AppConstants.sanitizeSchoolId(localStorage.getSchoolCode());
+    final studentGradeName = localStorage.getSelectedGradeName();
+    final studentDept = localStorage.getSelectedDepartment();
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    if (schoolId == null) {
-      return const Scaffold(body: Center(child: Text('خطأ: كود المدرسة مفقود')));
-    }
 
     final announcementsAsync = ref.watch(announcementsProvider(schoolId));
 
@@ -46,147 +94,257 @@ class _AnnouncementsTabState extends ConsumerState<AnnouncementsTab> {
             onRefresh: () async {
               ref.invalidate(announcementsProvider(schoolId));
             },
-        child: announcementsAsync.when(
-          data: (announcements) {
-            if (announcements.isEmpty) {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(32.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.08),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(Icons.campaign_outlined, size: 64, color: AppColors.primary.withValues(alpha: 0.6)),
-                      ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'لا توجد إعلانات أو تبليغات حالياً',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'سيتم إشعارك هنا عند نشر أي قرار أو تبليغ جديد من المدرسة',
-                        style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }
-
-            return AnimationLimiter(
-              child: ListView.builder(
-                physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                itemCount: announcements.length,
-                itemBuilder: (context, index) {
-                  final ann = announcements[index];
-                  final isPriority = ann.priority;
-
-                  return AnimationConfiguration.staggeredList(
-                    position: index,
-                    duration: const Duration(milliseconds: 350),
-                    child: SlideAnimation(
-                      verticalOffset: 30.0,
-                      child: FadeInAnimation(
-                        child: Container(
-                          margin: const EdgeInsets.only(bottom: 14),
-                          decoration: BoxDecoration(
-                            color: isDark ? AppColors.darkCard : Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: isPriority
-                                  ? const Color(0xFFF87171)
-                                  : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
-                              width: isPriority ? 1.8 : 1.2,
+            child: announcementsAsync.when(
+              data: (announcements) {
+                if (announcements.isEmpty) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(32.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.08),
+                              shape: BoxShape.circle,
                             ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: isPriority
-                                    ? Colors.red.withValues(alpha: 0.12)
-                                    : Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
-                                blurRadius: 14,
-                                offset: const Offset(0, 5),
-                              ),
-                            ],
+                            child: Icon(Icons.campaign_outlined, size: 64, color: AppColors.primary.withValues(alpha: 0.6)),
                           ),
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(20),
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  PageRouteBuilder(
-                                    transitionDuration: const Duration(milliseconds: 350),
-                                    pageBuilder: (_, __, ___) => AnnouncementDetailsScreen(announcement: ann),
-                                    transitionsBuilder: (_, animation, __, child) {
-                                      return FadeTransition(opacity: animation, child: child);
-                                    },
-                                  ),
-                                );
+                          const SizedBox(height: 16),
+                          const Text(
+                            'لا توجد إعلانات أو تبليغات حالياً',
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'سيتم إشعارك هنا عند نشر أي قرار أو تبليغ جديد من المدرسة',
+                            style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                final targetedList = announcements
+                    .where((a) => _matchesStudent(a, studentGradeName, studentDept))
+                    .toList();
+                final displayedAnnouncements = _filterMode == 'targeted' ? targetedList : announcements;
+
+                return Column(
+                  children: [
+                    // Targeting Filter Bar
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: FilterChip(
+                              avatar: const Icon(Icons.gps_fixed_rounded, size: 16),
+                              label: Text(
+                                studentDept != null && studentDept.isNotEmpty
+                                    ? 'صفي وقسمي ($studentDept)'
+                                    : 'إعلانات صفي',
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              selected: _filterMode == 'targeted',
+                              selectedColor: AppColors.primary.withValues(alpha: 0.18),
+                              onSelected: (val) {
+                                if (val) setState(() => _filterMode = 'targeted');
                               },
-                              child: Padding(
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: FilterChip(
+                              avatar: const Icon(Icons.campaign_rounded, size: 16),
+                              label: const Text('كافة التبليغات'),
+                              selected: _filterMode == 'all',
+                              selectedColor: AppColors.primary.withValues(alpha: 0.18),
+                              onSelected: (val) {
+                                if (val) setState(() => _filterMode = 'all');
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    if (displayedAnnouncements.isEmpty)
+                      Expanded(
+                        child: Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(24.0),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(Icons.filter_list_off_rounded, size: 48, color: Colors.grey),
+                                const SizedBox(height: 12),
+                                const Text(
+                                  'لا توجد تبليغات مخصصة لصفك أو قسمك',
+                                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  'يمكنك الاطلاع على كافة إعلانات المدرسة بالضغط أدناه',
+                                  style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+                                ),
+                                const SizedBox(height: 14),
+                                ElevatedButton(
+                                  onPressed: () => setState(() => _filterMode = 'all'),
+                                  child: const Text('عرض كافة تبليغات المدرسة'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      )
+                    else
+                      Expanded(
+                        child: AnimationLimiter(
+                          child: ListView.builder(
+                            physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                            itemCount: displayedAnnouncements.length,
+                            itemBuilder: (context, index) {
+                              final ann = displayedAnnouncements[index];
+                              final isPriority = ann.priority;
+                              final targetBadge = ann.targetTag;
+
+                              return AnimationConfiguration.staggeredList(
+                                position: index,
+                                duration: const Duration(milliseconds: 350),
+                                child: SlideAnimation(
+                                  verticalOffset: 30.0,
+                                  child: FadeInAnimation(
+                                    child: Container(
+                                      margin: const EdgeInsets.only(bottom: 14),
+                                      decoration: BoxDecoration(
+                                        color: isDark ? AppColors.darkCard : Colors.white,
+                                        borderRadius: BorderRadius.circular(20),
+                                        border: Border.all(
+                                          color: isPriority
+                                              ? const Color(0xFFF87171)
+                                              : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
+                                          width: isPriority ? 1.8 : 1.2,
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: isPriority
+                                                ? Colors.red.withValues(alpha: 0.12)
+                                                : Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+                                            blurRadius: 14,
+                                            offset: const Offset(0, 5),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Material(
+                                        color: Colors.transparent,
+                                        child: InkWell(
+                                          borderRadius: BorderRadius.circular(20),
+                                          onTap: () {
+                                            Navigator.push(
+                                              context,
+                                              PageRouteBuilder(
+                                                transitionDuration: const Duration(milliseconds: 350),
+                                                pageBuilder: (_, __, ___) => AnnouncementDetailsScreen(announcement: ann),
+                                                transitionsBuilder: (_, animation, __, child) {
+                                                  return FadeTransition(opacity: animation, child: child);
+                                                },
+                                              ),
+                                            );
+                                          },
+                                          child: Padding(
+
                                 padding: const EdgeInsets.all(18),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    // Header: Priority Badge or Normal Category
+                                    // Header: Priority Badge or Normal Category + Target Badge
                                     Row(
                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
-                                        if (isPriority)
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                            decoration: BoxDecoration(
-                                              color: const Color(0xFFFEE2E2),
-                                              borderRadius: BorderRadius.circular(10),
-                                            ),
-                                            child: const Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Icon(Icons.warning_amber_rounded, size: 14, color: Color(0xFFDC2626)),
-                                                SizedBox(width: 4),
-                                                Text(
-                                                  'هام وعاجل',
-                                                  style: TextStyle(
-                                                    color: Color(0xFFDC2626),
-                                                    fontSize: 11,
-                                                    fontWeight: FontWeight.bold,
+                                        Flexible(
+                                          child: Wrap(
+                                            spacing: 6,
+                                            runSpacing: 4,
+                                            crossAxisAlignment: WrapCrossAlignment.center,
+                                            children: [
+                                              if (isPriority)
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                                  decoration: BoxDecoration(
+                                                    color: const Color(0xFFFEE2E2),
+                                                    borderRadius: BorderRadius.circular(10),
+                                                  ),
+                                                  child: const Row(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      Icon(Icons.warning_amber_rounded, size: 14, color: Color(0xFFDC2626)),
+                                                      SizedBox(width: 4),
+                                                      Text(
+                                                        'هام وعاجل',
+                                                        style: TextStyle(
+                                                          color: Color(0xFFDC2626),
+                                                          fontSize: 11,
+                                                          fontWeight: FontWeight.bold,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                )
+                                              else
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                                  decoration: BoxDecoration(
+                                                    color: AppColors.primary.withValues(alpha: 0.1),
+                                                    borderRadius: BorderRadius.circular(10),
+                                                  ),
+                                                  child: const Row(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      Icon(Icons.campaign_rounded, size: 14, color: AppColors.primary),
+                                                      SizedBox(width: 4),
+                                                      Text(
+                                                        'إعلان مدرسي',
+                                                        style: TextStyle(
+                                                          color: AppColors.primary,
+                                                          fontSize: 11,
+                                                          fontWeight: FontWeight.bold,
+                                                        ),
+                                                      ),
+                                                    ],
                                                   ),
                                                 ),
-                                              ],
-                                            ),
-                                          )
-                                        else
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                            decoration: BoxDecoration(
-                                              color: AppColors.primary.withValues(alpha: 0.1),
-                                              borderRadius: BorderRadius.circular(10),
-                                            ),
-                                            child: const Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Icon(Icons.campaign_rounded, size: 14, color: AppColors.primary),
-                                                SizedBox(width: 4),
-                                                Text(
-                                                  'إعلان مدرسي',
-                                                  style: TextStyle(
-                                                    color: AppColors.primary,
-                                                    fontSize: 11,
-                                                    fontWeight: FontWeight.bold,
+                                              if (targetBadge != null)
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                  decoration: BoxDecoration(
+                                                    color: AppColors.secondary.withValues(alpha: 0.12),
+                                                    borderRadius: BorderRadius.circular(10),
+                                                    border: Border.all(color: AppColors.secondary.withValues(alpha: 0.25)),
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      const Icon(Icons.gps_fixed_rounded, size: 12, color: AppColors.secondary),
+                                                      const SizedBox(width: 4),
+                                                      Text(
+                                                        targetBadge,
+                                                        style: const TextStyle(
+                                                          color: AppColors.secondary,
+                                                          fontSize: 11,
+                                                          fontWeight: FontWeight.bold,
+                                                        ),
+                                                      ),
+                                                    ],
                                                   ),
                                                 ),
-                                              ],
-                                            ),
+                                            ],
                                           ),
+                                        ),
                                         // Time
                                         Row(
                                           children: [
@@ -217,7 +375,7 @@ class _AnnouncementsTabState extends ConsumerState<AnnouncementsTab> {
 
                                     // Content snippet
                                     Text(
-                                      ann.content,
+                                      ann.cleanContent,
                                       maxLines: 3,
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
@@ -285,8 +443,11 @@ class _AnnouncementsTabState extends ConsumerState<AnnouncementsTab> {
                   );
                 },
               ),
-            );
-          },
+            ),
+          ),
+        ],
+      );
+    },
           loading: () => ListView.builder(
             padding: const EdgeInsets.all(18),
             itemCount: 4,

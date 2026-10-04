@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/providers/core_providers.dart';
 import '../../../core/theme/app_colors.dart';
@@ -66,8 +67,31 @@ class TeacherDashboardScreen extends ConsumerWidget {
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(context);
-              await ref.read(authServiceProvider).logout();
-              await ref.read(localStorageServiceProvider).clearSession();
+
+              // 1. Clear teacher credentials in SharedPreferences
+              try {
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.remove('teacher_email');
+                await prefs.remove('teacher_password');
+                await prefs.remove('teacher_school_code');
+                await prefs.remove('teacher_school_name');
+              } catch (_) {}
+
+              // 2. Clear user session in LocalStorageService
+              try {
+                await ref.read(localStorageServiceProvider).clearSession();
+              } catch (_) {}
+
+              // 3. Supabase logout (in try-catch so it never hangs or blocks navigation)
+              try {
+                await ref.read(authServiceProvider).logout();
+              } catch (_) {}
+
+              // 4. Invalidate all auth & stats providers
+              ref.invalidate(activeSchoolProvider);
+              ref.invalidate(teacherStatsProvider);
+
+              // 5. Navigate immediately on the first click
               if (!context.mounted) return;
               Navigator.pushAndRemoveUntil(
                 context,
@@ -114,10 +138,30 @@ class TeacherDashboardScreen extends ConsumerWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
-            tooltip: 'تحديث البيانات',
-            onPressed: () {
+            tooltip: 'تحديث ومزامنة البيانات',
+            onPressed: () async {
+              final schoolId = AppConstants.sanitizeSchoolId(ref.read(localStorageServiceProvider).getSchoolCode());
               ref.invalidate(teacherStatsProvider);
               ref.invalidate(activeSchoolProvider);
+              ref.invalidate(announcementsProvider(schoolId));
+              ref.invalidate(classesProvider(schoolId));
+
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Row(
+                    children: [
+                      Icon(Icons.check_circle_outline_rounded, color: Colors.white),
+                      SizedBox(width: 8),
+                      Text('تم تحديث ومزامنة البيانات بنجاح'),
+                    ],
+                  ),
+                  backgroundColor: AppColors.primary,
+                  behavior: SnackBarBehavior.floating,
+                  duration: const Duration(seconds: 2),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              );
             },
           ),
           IconButton(

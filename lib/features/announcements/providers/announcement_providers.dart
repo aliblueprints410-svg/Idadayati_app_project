@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../../core/providers/core_providers.dart';
 import '../services/announcement_service.dart';
 import '../models/announcement.dart';
@@ -10,10 +11,11 @@ final announcementServiceProvider = Provider<AnnouncementService>((ref) {
   return AnnouncementService(supabase);
 });
 
-// Stream Providers
-final announcementsProvider = StreamProvider.family<List<Announcement>, String>((ref, schoolId) {
+// Announcements Provider (Fast, direct REST query with auto-dispose on navigation)
+final announcementsProvider = FutureProvider.autoDispose.family<List<Announcement>, String>((ref, schoolId) async {
+  final cleanSchoolId = AppConstants.sanitizeSchoolId(schoolId);
   final service = ref.watch(announcementServiceProvider);
-  return service.watchAnnouncements(schoolId);
+  return await service.getAnnouncements(cleanSchoolId);
 });
 
 final commentsProvider = StreamProvider.family<List<Comment>, String>((ref, announcementId) {
