@@ -21,6 +21,18 @@ class HomeworkService {
   static const String _sysHomeworkPrefix = '__SYS_HOMEWORK__:';
   static const String _localHomeworkKeyPrefix = 'local_homework_';
   static const String _archivedHomeworkIdsKey = 'archived_homework_ids';
+  static const String _sysDeletedHwPrefix = '__SYS_DELETED_HW__:';
+  static const String _deletedHomeworkIdsKey = 'deleted_homework_ids_';
+
+  Set<String>? _memorySubjectIdsCache;
+  String? _cachedSchoolId;
+  DateTime? _subjectIdsCacheTime;
+
+  void invalidateSubjectCache() {
+    _memorySubjectIdsCache = null;
+    _cachedSchoolId = null;
+    _subjectIdsCacheTime = null;
+  }
 
   ({int rev, List<Subject> subjects})? _parseSubjectsPayload(String? raw, int fallbackRev) {
     if (raw == null || raw.isEmpty) return null;
@@ -1201,17 +1213,51 @@ class HomeworkService {
     return localResetTs;
   }
 
+  Future<Set<String>> getDeletedHomeworkIds(String schoolId) async {
+    final cleanSchoolId = AppConstants.sanitizeSchoolId(schoolId);
+    final Set<String> deletedIds = {};
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      deletedIds.addAll(prefs.getStringList('$_deletedHomeworkIdsKey$cleanSchoolId') ?? []);
+    } catch (_) {}
+
+    try {
+      final sysTitle = '$_sysDeletedHwPrefix$cleanSchoolId';
+      final sysRows = await _supabase
+          .from(AppTables.announcements)
+          .select('content')
+          .eq('title', sysTitle)
+          .order('created_at', ascending: false)
+          .limit(15);
+
+      for (final row in (sysRows as List)) {
+        final raw = row['content'] as String?;
+        if (raw != null && raw.isNotEmpty) {
+          final list = (jsonDecode(raw) as List).map((e) => e.toString());
+          deletedIds.addAll(list);
+        }
+      }
+      if (deletedIds.isNotEmpty) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setStringList('$_deletedHomeworkIdsKey$cleanSchoolId', deletedIds.toList());
+      }
+    } catch (_) {}
+
+    return deletedIds;
+  }
+
   Future<Set<String>> _getSchoolSubjectIds(String schoolId) async {
     final cleanSchoolId = AppConstants.sanitizeSchoolId(schoolId);
+    if (_memorySubjectIdsCache != null &&
+        _cachedSchoolId == cleanSchoolId &&
+        _subjectIdsCacheTime != null &&
+        DateTime.now().difference(_subjectIdsCacheTime!).inMinutes < 3) {
+      return _memorySubjectIdsCache!;
+    }
+
     final Set<String> subjectIds = {};
     try {
       final classes = await getClasses(cleanSchoolId);
-      for (final c in classes) {
-        final subs = await getSubjects(c.id);
-        for (final s in subs) {
-          subjectIds.add(s.id);
-        }
-      }
       if (classes.isNotEmpty) {
         final classIds = classes.map((c) => c.id).toList();
         final dbSubs = await _supabase
@@ -1226,11 +1272,14 @@ class HomeworkService {
         }
       }
     } catch (_) {}
+
+    _memorySubjectIdsCache = subjectIds;
+    _cachedSchoolId = cleanSchoolId;
+    _subjectIdsCacheTime = DateTime.now();
     return subjectIds;
   }
 
   // Get active and expired/completed homework counts for Teacher Dashboard
-  // Teacher completion depends ONLY on whether the homework's deadline time has expired (not single student completion!)
   Future<Map<String, int>> getDashboardHomeworkStats([String? schoolId]) async {
     String cleanSchoolId = AppConstants.defaultSchoolId;
     try {
@@ -1242,6 +1291,7 @@ class HomeworkService {
 
     final schoolSubjectIds = await _getSchoolSubjectIds(cleanSchoolId);
     final resetTs = await _getSchoolResetTimestamp(cleanSchoolId);
+    final deletedIds = await getDeletedHomeworkIds(cleanSchoolId);
     final Map<String, Homework> allHomeworks = {};
 
     try {
@@ -1251,7 +1301,8 @@ class HomeworkService {
           .eq('is_deleted', false);
       for (final e in (hwRes as List)) {
         final hw = Homework.fromJson(Map<String, dynamic>.from(e as Map));
-        if (schoolSubjectIds.contains(hw.subjectId) &&
+        if (!deletedIds.contains(hw.id) &&
+            schoolSubjectIds.contains(hw.subjectId) &&
             (resetTs == null || !hw.createdAt.toUtc().isBefore(resetTs))) {
           allHomeworks[hw.id] = hw;
         }
@@ -1261,17 +1312,24 @@ class HomeworkService {
     try {
       final sysRows = await _supabase
           .from(AppTables.announcements)
-          .select('content')
+          .select('title, content')
           .like('title', '$_sysHomeworkPrefix%')
           .order('created_at', ascending: false)
-          .limit(25);
+          .limit(30);
+
+      final Set<String> processedTitles = {};
       for (final row in (sysRows as List)) {
+        final title = (row['title'] ?? '').toString();
+        if (processedTitles.contains(title)) continue;
+        processedTitles.add(title);
+
         final raw = row['content'] as String?;
         if (raw != null && raw.isNotEmpty) {
           final list = jsonDecode(raw) as List;
           for (final e in list) {
             final hw = Homework.fromJson(Map<String, dynamic>.from(e as Map));
             if (!hw.isDeleted &&
+                !deletedIds.contains(hw.id) &&
                 schoolSubjectIds.contains(hw.subjectId) &&
                 (resetTs == null || !hw.createdAt.toUtc().isBefore(resetTs))) {
               allHomeworks[hw.id] = hw;
@@ -1309,6 +1367,7 @@ class HomeworkService {
 
     final schoolSubjectIds = await _getSchoolSubjectIds(cleanSchoolId);
     final resetTs = await _getSchoolResetTimestamp(cleanSchoolId);
+    final deletedIds = await getDeletedHomeworkIds(cleanSchoolId);
     final Map<String, Homework> completed = {};
 
     try {
@@ -1319,7 +1378,8 @@ class HomeworkService {
           .order('created_at', ascending: false);
       for (final e in (hwRes as List)) {
         final hw = Homework.fromJson(Map<String, dynamic>.from(e as Map));
-        if (schoolSubjectIds.contains(hw.subjectId) &&
+        if (!deletedIds.contains(hw.id) &&
+            schoolSubjectIds.contains(hw.subjectId) &&
             (resetTs == null || !hw.createdAt.toUtc().isBefore(resetTs)) &&
             (hw.isExpired || !hw.isCurrent)) {
           completed[hw.id] = hw;
@@ -1330,17 +1390,24 @@ class HomeworkService {
     try {
       final sysRows = await _supabase
           .from(AppTables.announcements)
-          .select('content')
+          .select('title, content')
           .like('title', '$_sysHomeworkPrefix%')
           .order('created_at', ascending: false)
-          .limit(25);
+          .limit(30);
+
+      final Set<String> processedTitles = {};
       for (final row in (sysRows as List)) {
+        final title = (row['title'] ?? '').toString();
+        if (processedTitles.contains(title)) continue;
+        processedTitles.add(title);
+
         final raw = row['content'] as String?;
         if (raw != null && raw.isNotEmpty) {
           final list = jsonDecode(raw) as List;
           for (final e in list) {
             final hw = Homework.fromJson(Map<String, dynamic>.from(e as Map));
             if (!hw.isDeleted &&
+                !deletedIds.contains(hw.id) &&
                 schoolSubjectIds.contains(hw.subjectId) &&
                 (resetTs == null || !hw.createdAt.toUtc().isBefore(resetTs)) &&
                 (hw.isExpired || !hw.isCurrent)) {
@@ -1368,6 +1435,7 @@ class HomeworkService {
 
     final schoolSubjectIds = await _getSchoolSubjectIds(cleanSchoolId);
     final resetTs = await _getSchoolResetTimestamp(cleanSchoolId);
+    final deletedIds = await getDeletedHomeworkIds(cleanSchoolId);
     final Map<String, Homework> active = {};
 
     try {
@@ -1379,7 +1447,8 @@ class HomeworkService {
           .order('created_at', ascending: false);
       for (final e in (hwRes as List)) {
         final hw = Homework.fromJson(Map<String, dynamic>.from(e as Map));
-        if (schoolSubjectIds.contains(hw.subjectId) &&
+        if (!deletedIds.contains(hw.id) &&
+            schoolSubjectIds.contains(hw.subjectId) &&
             (resetTs == null || !hw.createdAt.toUtc().isBefore(resetTs)) &&
             !hw.isExpired) {
           active[hw.id] = hw;
@@ -1390,17 +1459,24 @@ class HomeworkService {
     try {
       final sysRows = await _supabase
           .from(AppTables.announcements)
-          .select('content')
+          .select('title, content')
           .like('title', '$_sysHomeworkPrefix%')
           .order('created_at', ascending: false)
-          .limit(25);
+          .limit(30);
+
+      final Set<String> processedTitles = {};
       for (final row in (sysRows as List)) {
+        final title = (row['title'] ?? '').toString();
+        if (processedTitles.contains(title)) continue;
+        processedTitles.add(title);
+
         final raw = row['content'] as String?;
         if (raw != null && raw.isNotEmpty) {
           final list = jsonDecode(raw) as List;
           for (final e in list) {
             final hw = Homework.fromJson(Map<String, dynamic>.from(e as Map));
             if (!hw.isDeleted &&
+                !deletedIds.contains(hw.id) &&
                 hw.isCurrent &&
                 !hw.isExpired &&
                 schoolSubjectIds.contains(hw.subjectId) &&
@@ -1485,8 +1561,15 @@ class HomeworkService {
   // Shows homeworks not yet completed by this student (if time expired without completion, HomeworkCard shows 'انتهى وقت الواجب')
   Future<List<Homework>> getCurrentHomework(String subjectId) async {
     final Map<String, Homework> merged = {};
-    final studentCompletedIds = await getStudentCompletedHomeworkIds();
-    final resetTs = await _getSchoolResetTimestamp();
+    String cleanSchoolId = AppConstants.defaultSchoolId;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      cleanSchoolId = AppConstants.sanitizeSchoolId(prefs.getString(AppConstants.keySchoolCode));
+    } catch (_) {}
+
+    final studentCompletedIds = await getStudentCompletedHomeworkIds(cleanSchoolId);
+    final resetTs = await _getSchoolResetTimestamp(cleanSchoolId);
+    final deletedIds = await getDeletedHomeworkIds(cleanSchoolId);
 
     try {
       final res = await _supabase
@@ -1497,7 +1580,8 @@ class HomeworkService {
           .eq('is_deleted', false);
       for (final e in (res as List)) {
         final hw = Homework.fromJson(e as Map<String, dynamic>);
-        if (!studentCompletedIds.contains(hw.id) &&
+        if (!deletedIds.contains(hw.id) &&
+            !studentCompletedIds.contains(hw.id) &&
             (resetTs == null || !hw.createdAt.toUtc().isBefore(resetTs))) {
           merged[hw.id] = hw;
         }
@@ -1508,6 +1592,7 @@ class HomeworkService {
     for (final hw in fallback) {
       if (hw.isCurrent &&
           !hw.isDeleted &&
+          !deletedIds.contains(hw.id) &&
           !studentCompletedIds.contains(hw.id) &&
           (resetTs == null || !hw.createdAt.toUtc().isBefore(resetTs))) {
         merged[hw.id] = hw;
@@ -1527,8 +1612,15 @@ class HomeworkService {
   // Fetch completed & expired homework for Student ('مكتمل')
   Future<List<Homework>> getHomeworkArchive(String subjectId) async {
     final Map<String, Homework> merged = {};
-    final studentCompletedIds = await getStudentCompletedHomeworkIds();
-    final resetTs = await _getSchoolResetTimestamp();
+    String cleanSchoolId = AppConstants.defaultSchoolId;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      cleanSchoolId = AppConstants.sanitizeSchoolId(prefs.getString(AppConstants.keySchoolCode));
+    } catch (_) {}
+
+    final studentCompletedIds = await getStudentCompletedHomeworkIds(cleanSchoolId);
+    final resetTs = await _getSchoolResetTimestamp(cleanSchoolId);
+    final deletedIds = await getDeletedHomeworkIds(cleanSchoolId);
 
     try {
       final res = await _supabase
@@ -1539,7 +1631,8 @@ class HomeworkService {
           .order('created_at', ascending: false);
       for (final e in (res as List)) {
         final hw = Homework.fromJson(e as Map<String, dynamic>);
-        if ((resetTs == null || !hw.createdAt.toUtc().isBefore(resetTs)) &&
+        if (!deletedIds.contains(hw.id) &&
+            (resetTs == null || !hw.createdAt.toUtc().isBefore(resetTs)) &&
             (!hw.isCurrent || hw.isExpired || studentCompletedIds.contains(hw.id))) {
           merged[hw.id] = hw;
         }
@@ -1549,6 +1642,7 @@ class HomeworkService {
     final fallback = await _getFallbackHomeworkForSubject(subjectId);
     for (final hw in fallback) {
       if (!hw.isDeleted &&
+          !deletedIds.contains(hw.id) &&
           (resetTs == null || !hw.createdAt.toUtc().isBefore(resetTs)) &&
           (!hw.isCurrent || hw.isExpired || studentCompletedIds.contains(hw.id))) {
         merged[hw.id] = hw;
@@ -1652,14 +1746,50 @@ class HomeworkService {
     }
   }
 
-  // Delete homework (Soft delete in DB and purge from fallback / local storage)
-  Future<void> deleteHomework(String id, {String? subjectId}) async {
+  // Delete homework (Soft delete in DB and purge from fallback / local storage & cloud snapshot)
+  Future<void> deleteHomework(String id, {String? subjectId, String? schoolId}) async {
+    String cleanSchoolId = AppConstants.defaultSchoolId;
+    Set<String> deletedIds = {};
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      cleanSchoolId = AppConstants.sanitizeSchoolId(
+        schoolId ?? prefs.getString(AppConstants.keySchoolCode),
+      );
+      deletedIds = await getDeletedHomeworkIds(cleanSchoolId);
+      deletedIds.add(id);
+      await prefs.setStringList('$_deletedHomeworkIdsKey$cleanSchoolId', deletedIds.toList());
+    } catch (_) {
+      deletedIds.add(id);
+    }
+
+    // 1. Try standard DB soft delete & delete
     try {
       await _supabase.from(AppTables.homework).update({'is_deleted': true}).eq('id', id);
     } catch (e) {
       debugPrint('[HomeworkService] deleteHomework DB notice: $e');
     }
+    try {
+      await _supabase.from(AppTables.homework).delete().eq('id', id);
+    } catch (_) {}
 
+    // 2. Insert cloud deletion snapshot so all devices sync immediately
+    try {
+      final sysTitle = '$_sysDeletedHwPrefix$cleanSchoolId';
+      await _supabase.from(AppTables.announcements).insert({
+        'id': const Uuid().v4(),
+        'school_id': cleanSchoolId,
+        'title': sysTitle,
+        'content': jsonEncode(deletedIds.toList()),
+        'created_at': DateTime.now().toUtc().toIso8601String(),
+        'priority': false,
+        'is_deleted': false,
+      });
+    } catch (e) {
+      debugPrint('[HomeworkService] Cloud delete sync notice: $e');
+    }
+
+    // 3. Purge from local fallback storage
     if (subjectId != null && subjectId.isNotEmpty) {
       try {
         final existing = await _getFallbackHomeworkForSubject(subjectId);

@@ -149,11 +149,14 @@ class TeacherDashboardScreen extends ConsumerWidget {
             tooltip: 'تحديث ومزامنة البيانات',
             onPressed: () async {
               final schoolId = AppConstants.sanitizeSchoolId(ref.read(localStorageServiceProvider).getSchoolCode());
+              ref.read(homeworkServiceProvider).invalidateSubjectCache();
               ref.invalidate(teacherStatsProvider);
+              await ref.read(teacherStatsProvider.future);
               ref.invalidate(activeSchoolProvider);
               ref.invalidate(announcementsProvider(schoolId));
               ref.invalidate(classesProvider(schoolId));
 
+              if (!context.mounted) return;
               ScaffoldMessenger.of(context).hideCurrentSnackBar();
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -341,7 +344,10 @@ class TeacherDashboardScreen extends ConsumerWidget {
                 title: 'إضافة تحضير مدرسي جديد',
                 subtitle: 'إسناد واجبات يومية للطلاب وتحديد موعد التسليم',
                 gradient: const [Color(0xFF3B82F6), Color(0xFF2563EB)],
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AddHomeworkScreen())),
+                onTap: () async {
+                  await Navigator.push(context, MaterialPageRoute(builder: (_) => const AddHomeworkScreen()));
+                  ref.invalidate(teacherStatsProvider);
+                },
               ),
               const SizedBox(height: 12),
 
@@ -361,7 +367,10 @@ class TeacherDashboardScreen extends ConsumerWidget {
                 title: 'نشر وإدارة التبليغات المدرسية',
                 subtitle: 'إرسال تنبيهات فورية للطلاب مع إمكانية حذف التبليغات السابقة',
                 gradient: const [Color(0xFFF59E0B), Color(0xFFD97706)],
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AddAnnouncementScreen())),
+                onTap: () async {
+                  await Navigator.push(context, MaterialPageRoute(builder: (_) => const AddAnnouncementScreen()));
+                  ref.invalidate(teacherStatsProvider);
+                },
               ),
               const SizedBox(height: 12),
 
@@ -510,10 +519,8 @@ class TeacherDashboardScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _showActiveHomeworkSheet(BuildContext context, WidgetRef ref) async {
+  void _showActiveHomeworkSheet(BuildContext context, WidgetRef ref) {
     final schoolId = AppConstants.sanitizeSchoolId(ref.read(localStorageServiceProvider).getSchoolCode());
-    final activeList = await ref.read(homeworkServiceProvider).getAllActiveHomework(schoolId);
-    if (!context.mounted) return;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     showModalBottomSheet(
@@ -524,8 +531,30 @@ class TeacherDashboardScreen extends ConsumerWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) {
+        List<Homework>? activeList;
+        bool isLoading = true;
+        String? errorMessage;
+
         return StatefulBuilder(
           builder: (context, setSheetState) {
+            if (isLoading && activeList == null && errorMessage == null) {
+              ref.read(homeworkServiceProvider).getAllActiveHomework(schoolId).then((data) {
+                if (ctx.mounted) {
+                  setSheetState(() {
+                    activeList = data;
+                    isLoading = false;
+                  });
+                }
+              }).catchError((e) {
+                if (ctx.mounted) {
+                  setSheetState(() {
+                    errorMessage = e.toString();
+                    isLoading = false;
+                  });
+                }
+              });
+            }
+
             return DraggableScrollableSheet(
               expand: false,
               initialChildSize: 0.65,
@@ -560,82 +589,103 @@ class TeacherDashboardScreen extends ConsumerWidget {
                       ),
                       const Divider(),
                       Expanded(
-                        child: activeList.isEmpty
+                        child: isLoading
                             ? const Center(
-                                child: Text(
-                                  'لا توجد تحاضير نشطة حالياً',
-                                  style: TextStyle(color: Colors.grey),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    CircularProgressIndicator(),
+                                    SizedBox(height: 12),
+                                    Text(
+                                      'جاري جلب التحاضير المدرسية...',
+                                      style: TextStyle(fontSize: 13, color: Colors.grey),
+                                    ),
+                                  ],
                                 ),
                               )
-                            : ListView.builder(
-                                controller: controller,
-                                itemCount: activeList.length,
-                                itemBuilder: (context, index) {
-                                  final hw = activeList[index];
-                                  return Card(
-                                    color: isDark ? AppColors.darkCard : Colors.grey.shade50,
-                                    margin: const EdgeInsets.only(bottom: 10),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(14),
-                                      side: BorderSide(
-                                        color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-                                      ),
+                            : (errorMessage != null)
+                                ? Center(
+                                    child: Text(
+                                      'خطأ في جلب التحاضير: $errorMessage',
+                                      style: const TextStyle(color: Colors.red),
                                     ),
-                                    child: ListTile(
-                                      leading: Container(
-                                        padding: const EdgeInsets.all(8),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFF3B82F6).withValues(alpha: 0.12),
-                                          borderRadius: BorderRadius.circular(10),
+                                  )
+                                : (activeList == null || activeList!.isEmpty)
+                                    ? const Center(
+                                        child: Text(
+                                          'لا توجد تحاضير نشطة حالياً',
+                                          style: TextStyle(color: Colors.grey),
                                         ),
-                                        child: const Icon(
-                                          Icons.assignment_rounded,
-                                          color: Color(0xFF3B82F6),
-                                          size: 24,
-                                        ),
-                                      ),
-                                      title: Text(
-                                        hw.title,
-                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                                      ),
-                                      subtitle: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          const SizedBox(height: 2),
-                                          Text(
-                                            ArabicDayHelper.formatDescriptionDatesToDayNames(hw.description),
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(fontSize: 12),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            hw.deadline != null
-                                                ? '📅 موعد التسليم: ${ArabicDayHelper.formatFullDayDateTime(hw.deadline!)}'
-                                                : 'نشر في: ${ArabicDayHelper.formatDayAndDate(hw.createdAt)}',
-                                            style: const TextStyle(
-                                              fontSize: 11,
-                                              color: Color(0xFF3B82F6),
-                                              fontWeight: FontWeight.bold,
+                                      )
+                                    : ListView.builder(
+                                        controller: controller,
+                                        itemCount: activeList!.length,
+                                        itemBuilder: (context, index) {
+                                          final hw = activeList![index];
+                                          return Card(
+                                            color: isDark ? AppColors.darkCard : Colors.grey.shade50,
+                                            margin: const EdgeInsets.only(bottom: 10),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(14),
+                                              side: BorderSide(
+                                                color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                                              ),
                                             ),
-                                          ),
-                                        ],
-                                      ),
-                                      trailing: IconButton(
-                                        icon: const Icon(Icons.delete_outline_rounded, color: Colors.red),
-                                        tooltip: 'حذف هذا الواجب',
-                                        onPressed: () {
-                                          _confirmDeleteHomework(context, ref, hw, () {
-                                            setSheetState(() {
-                                              activeList.removeWhere((item) => item.id == hw.id);
-                                            });
-                                          });
+                                            child: ListTile(
+                                              leading: Container(
+                                                padding: const EdgeInsets.all(8),
+                                                decoration: BoxDecoration(
+                                                  color: const Color(0xFF3B82F6).withValues(alpha: 0.12),
+                                                  borderRadius: BorderRadius.circular(10),
+                                                ),
+                                                child: const Icon(
+                                                  Icons.assignment_rounded,
+                                                  color: Color(0xFF3B82F6),
+                                                  size: 24,
+                                                ),
+                                              ),
+                                              title: Text(
+                                                hw.title,
+                                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                              ),
+                                              subtitle: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  const SizedBox(height: 2),
+                                                  Text(
+                                                    ArabicDayHelper.formatDescriptionDatesToDayNames(hw.description),
+                                                    maxLines: 2,
+                                                    overflow: TextOverflow.ellipsis,
+                                                    style: const TextStyle(fontSize: 12),
+                                                  ),
+                                                  const SizedBox(height: 4),
+                                                  Text(
+                                                    hw.deadline != null
+                                                        ? '📅 موعد التسليم: ${ArabicDayHelper.formatFullDayDateTime(hw.deadline!)}'
+                                                        : 'نشر في: ${ArabicDayHelper.formatDayAndDate(hw.createdAt)}',
+                                                    style: const TextStyle(
+                                                      fontSize: 11,
+                                                      color: Color(0xFF3B82F6),
+                                                      fontWeight: FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              trailing: IconButton(
+                                                icon: const Icon(Icons.delete_outline_rounded, color: Colors.red),
+                                                tooltip: 'حذف هذا الواجب',
+                                                onPressed: () {
+                                                  _confirmDeleteHomework(context, ref, hw, () {
+                                                    setSheetState(() {
+                                                      activeList!.removeWhere((item) => item.id == hw.id);
+                                                    });
+                                                  });
+                                                },
+                                              ),
+                                            ),
+                                          );
                                         },
                                       ),
-                                    ),
-                                  );
-                                },
-                              ),
                       ),
                     ],
                   ),
@@ -648,10 +698,8 @@ class TeacherDashboardScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _showCompletedHomeworkSheet(BuildContext context, WidgetRef ref) async {
+  void _showCompletedHomeworkSheet(BuildContext context, WidgetRef ref) {
     final schoolId = AppConstants.sanitizeSchoolId(ref.read(localStorageServiceProvider).getSchoolCode());
-    final completedList = await ref.read(homeworkServiceProvider).getAllCompletedHomework(schoolId);
-    if (!context.mounted) return;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     showModalBottomSheet(
@@ -662,8 +710,30 @@ class TeacherDashboardScreen extends ConsumerWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) {
+        List<Homework>? completedList;
+        bool isLoading = true;
+        String? errorMessage;
+
         return StatefulBuilder(
           builder: (context, setSheetState) {
+            if (isLoading && completedList == null && errorMessage == null) {
+              ref.read(homeworkServiceProvider).getAllCompletedHomework(schoolId).then((data) {
+                if (ctx.mounted) {
+                  setSheetState(() {
+                    completedList = data;
+                    isLoading = false;
+                  });
+                }
+              }).catchError((e) {
+                if (ctx.mounted) {
+                  setSheetState(() {
+                    errorMessage = e.toString();
+                    isLoading = false;
+                  });
+                }
+              });
+            }
+
             return DraggableScrollableSheet(
               expand: false,
               initialChildSize: 0.55,
@@ -693,93 +763,114 @@ class TeacherDashboardScreen extends ConsumerWidget {
                       ),
                       const Divider(),
                       Expanded(
-                        child: completedList.isEmpty
+                        child: isLoading
                             ? const Center(
-                                child: Text(
-                                  'لا توجد تحاضير منتهية الوقت حتى الآن',
-                                  style: TextStyle(color: Colors.grey),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    CircularProgressIndicator(),
+                                    SizedBox(height: 12),
+                                    Text(
+                                      'جاري جلب التحاضير المكتملة...',
+                                      style: TextStyle(fontSize: 13, color: Colors.grey),
+                                    ),
+                                  ],
                                 ),
                               )
-                            : ListView.builder(
-                                controller: controller,
-                                itemCount: completedList.length,
-                                itemBuilder: (context, index) {
-                                  final hw = completedList[index];
-                                  return Card(
-                                    color: isDark ? AppColors.darkCard : Colors.grey.shade50,
-                                    margin: const EdgeInsets.only(bottom: 10),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(14),
-                                      side: BorderSide(
-                                        color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-                                      ),
+                            : (errorMessage != null)
+                                ? Center(
+                                    child: Text(
+                                      'خطأ في جلب التحاضير: $errorMessage',
+                                      style: const TextStyle(color: Colors.red),
                                     ),
-                                    child: ListTile(
-                                      leading: const Icon(
-                                        Icons.timer_off_rounded,
-                                        color: AppColors.success,
-                                      ),
-                                      title: Text(
-                                        hw.title,
-                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                                      ),
-                                      subtitle: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            ArabicDayHelper.formatDescriptionDatesToDayNames(hw.description),
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(fontSize: 12),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            hw.deadline != null
-                                                ? ArabicDayHelper.formatFullDayDateTime(hw.deadline!)
-                                                : ArabicDayHelper.formatDayAndDate(hw.createdAt),
-                                            style: const TextStyle(
-                                              fontSize: 11,
-                                              color: AppColors.primary,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      trailing: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                            decoration: BoxDecoration(
-                                              color: AppColors.success.withValues(alpha: 0.12),
-                                              borderRadius: BorderRadius.circular(8),
-                                            ),
-                                            child: const Text(
-                                              'انتهى ⏰',
-                                              style: TextStyle(
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.bold,
-                                                color: AppColors.success,
+                                  )
+                                : (completedList == null || completedList!.isEmpty)
+                                    ? const Center(
+                                        child: Text(
+                                          'لا توجد تحاضير منتهية الوقت حتى الآن',
+                                          style: TextStyle(color: Colors.grey),
+                                        ),
+                                      )
+                                    : ListView.builder(
+                                        controller: controller,
+                                        itemCount: completedList!.length,
+                                        itemBuilder: (context, index) {
+                                          final hw = completedList![index];
+                                          return Card(
+                                            color: isDark ? AppColors.darkCard : Colors.grey.shade50,
+                                            margin: const EdgeInsets.only(bottom: 10),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(14),
+                                              side: BorderSide(
+                                                color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
                                               ),
                                             ),
-                                          ),
-                                          IconButton(
-                                            icon: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20),
-                                            tooltip: 'حذف',
-                                            onPressed: () {
-                                              _confirmDeleteHomework(context, ref, hw, () {
-                                                setSheetState(() {
-                                                  completedList.removeWhere((item) => item.id == hw.id);
-                                                });
-                                              });
-                                            },
-                                          ),
-                                        ],
+                                            child: ListTile(
+                                              leading: const Icon(
+                                                Icons.timer_off_rounded,
+                                                color: AppColors.success,
+                                              ),
+                                              title: Text(
+                                                hw.title,
+                                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                              ),
+                                              subtitle: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    ArabicDayHelper.formatDescriptionDatesToDayNames(hw.description),
+                                                    maxLines: 2,
+                                                    overflow: TextOverflow.ellipsis,
+                                                    style: const TextStyle(fontSize: 12),
+                                                  ),
+                                                  const SizedBox(height: 4),
+                                                  Text(
+                                                    hw.deadline != null
+                                                        ? ArabicDayHelper.formatFullDayDateTime(hw.deadline!)
+                                                        : ArabicDayHelper.formatDayAndDate(hw.createdAt),
+                                                    style: const TextStyle(
+                                                      fontSize: 11,
+                                                      color: AppColors.primary,
+                                                      fontWeight: FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              trailing: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                    decoration: BoxDecoration(
+                                                      color: AppColors.success.withValues(alpha: 0.12),
+                                                      borderRadius: BorderRadius.circular(8),
+                                                    ),
+                                                    child: const Text(
+                                                      'انتهى ⏰',
+                                                      style: TextStyle(
+                                                        fontSize: 11,
+                                                        fontWeight: FontWeight.bold,
+                                                        color: AppColors.success,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  IconButton(
+                                                    icon: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20),
+                                                    tooltip: 'حذف',
+                                                    onPressed: () {
+                                                      _confirmDeleteHomework(context, ref, hw, () {
+                                                        setSheetState(() {
+                                                          completedList!.removeWhere((item) => item.id == hw.id);
+                                                        });
+                                                      });
+                                                    },
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          );
+                                        },
                                       ),
-                                    ),
-                                  );
-                                },
-                              ),
                       ),
                     ],
                   ),
@@ -825,9 +916,10 @@ class TeacherDashboardScreen extends ConsumerWidget {
             onPressed: () async {
               Navigator.pop(dialogCtx);
               try {
+                final schoolId = AppConstants.sanitizeSchoolId(ref.read(localStorageServiceProvider).getSchoolCode());
                 await ref
                     .read(homeworkServiceProvider)
-                    .deleteHomework(hw.id, subjectId: hw.subjectId);
+                    .deleteHomework(hw.id, subjectId: hw.subjectId, schoolId: schoolId);
                 ref.invalidate(teacherStatsProvider);
                 ref.invalidate(currentHomeworkProvider(hw.subjectId));
                 ref.invalidate(homeworkArchiveProvider(hw.subjectId));

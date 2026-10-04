@@ -13,6 +13,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/arabic_day_helper.dart';
 import '../../homework/models/homework.dart';
 import '../../homework/providers/homework_providers.dart';
+import 'teacher_dashboard_screen.dart';
 
 class AddHomeworkScreen extends ConsumerStatefulWidget {
   const AddHomeworkScreen({super.key});
@@ -160,6 +161,9 @@ class _AddHomeworkScreenState extends ConsumerState<AddHomeworkScreen> {
       );
 
       await ref.read(homeworkServiceProvider).addHomework(newHomework);
+      ref.invalidate(teacherStatsProvider);
+      ref.invalidate(currentHomeworkProvider(_selectedSubjectId!));
+      ref.invalidate(homeworkArchiveProvider(_selectedSubjectId!));
 
       // Send Push Notification to students of this class ONLY
       try {

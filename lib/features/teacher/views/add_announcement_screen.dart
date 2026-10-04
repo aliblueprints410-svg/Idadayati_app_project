@@ -315,7 +315,7 @@ class _AddAnnouncementScreenState extends ConsumerState<AddAnnouncementScreen> {
                                       ),
                                       const SizedBox(height: 6),
                                       DropdownButtonFormField<String>(
-                                        value: _vocationalStage,
+                                        initialValue: _vocationalStage,
                                         isExpanded: true,
                                         decoration: InputDecoration(
                                           contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -339,7 +339,7 @@ class _AddAnnouncementScreenState extends ConsumerState<AddAnnouncementScreen> {
                                       ),
                                       const SizedBox(height: 6),
                                       DropdownButtonFormField<String>(
-                                        value: _vocationalDept,
+                                        initialValue: _vocationalDept,
                                         isExpanded: true,
                                         decoration: InputDecoration(
                                           contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -368,7 +368,7 @@ class _AddAnnouncementScreenState extends ConsumerState<AddAnnouncementScreen> {
                                           final options = <String>['الكل', ...classes.map((c) => c.name)];
                                           final currentVal = options.contains(_academicClass) ? _academicClass : 'الكل';
                                           return DropdownButtonFormField<String>(
-                                            value: currentVal,
+                                            initialValue: currentVal,
                                             isExpanded: true,
                                             decoration: InputDecoration(
                                               contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -391,7 +391,7 @@ class _AddAnnouncementScreenState extends ConsumerState<AddAnnouncementScreen> {
                                           child: LinearProgressIndicator(),
                                         ),
                                         error: (_, __) => DropdownButtonFormField<String>(
-                                          value: _academicClass,
+                                          initialValue: _academicClass,
                                           items: const [
                                             DropdownMenuItem(value: 'الكل', child: Text('كافة الصفوف')),
                                           ],
