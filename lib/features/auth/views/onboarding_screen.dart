@@ -108,8 +108,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? AppColors.darkBackground : Colors.white,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -128,7 +130,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         width: 104,
                         height: 104,
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: isDark ? AppColors.darkSurface : Colors.white,
                           borderRadius: BorderRadius.circular(28),
                           border: Border.all(color: AppColors.gold.withValues(alpha: 0.35), width: 2),
                           boxShadow: [
@@ -160,7 +162,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       'تسجيل دخول الطالب',
                       style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                             fontWeight: FontWeight.w900,
-                            color: AppColors.primary,
+                            color: isDark ? AppColors.primaryLight : AppColors.primary,
                           ),
                       textAlign: TextAlign.center,
                     ),
@@ -168,7 +170,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     Text(
                       'أدخل كود إعداديتك للدخول إلى الأقسام والمواد والواجبات',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppColors.textSecondary,
+                            color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
                           ),
                       textAlign: TextAlign.center,
                     ),
@@ -186,7 +188,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         decoration: BoxDecoration(
-                          color: AppColors.goldSurface,
+                          color: isDark ? AppColors.darkSurface : AppColors.goldSurface,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(color: AppColors.borderGold, width: 1.5),
                         ),
@@ -201,11 +203,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                               child: const Icon(Icons.flash_on_rounded, color: AppColors.gold, size: 20),
                             ),
                             const SizedBox(width: 12),
-                            const Expanded(
+                            Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
+                                  const Text(
                                     'دخول سريع تجريبي',
                                     style: TextStyle(
                                       fontSize: 11,
@@ -218,7 +220,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                     style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w700,
-                                      color: AppColors.textPrimary,
+                                      color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                                     ),
                                   ),
                                 ],
@@ -232,12 +234,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     const SizedBox(height: 20),
 
                     // School Code Field Only
-                    const Text(
+                    Text(
                       'كود الإعدادية الخاص',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
+                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -306,18 +308,18 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     // Divider with Text
                     Row(
                       children: [
-                        Expanded(child: Divider(color: Colors.grey.shade300)),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 16.0),
+                        Expanded(child: Divider(color: isDark ? AppColors.darkBorder : Colors.grey.shade300)),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
                           child: Text(
                             'أو',
                             style: TextStyle(
                               fontSize: 13,
-                              color: AppColors.textSecondary,
+                              color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
                             ),
                           ),
                         ),
-                        Expanded(child: Divider(color: Colors.grey.shade300)),
+                        Expanded(child: Divider(color: isDark ? AppColors.darkBorder : Colors.grey.shade300)),
                       ],
                     ),
                     const SizedBox(height: 20),
@@ -339,7 +341,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                           color: AppColors.gold.withValues(alpha: 0.5),
                           width: 1.5,
                         ),
-                        foregroundColor: AppColors.primary,
+                        foregroundColor: isDark ? AppColors.primaryLight : AppColors.primary,
                       ),
                     ),
                   ],

@@ -63,8 +63,10 @@ class _IntroWalkthroughScreenState extends State<IntroWalkthroughScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? AppColors.darkBackground : Colors.white,
       body: SafeArea(
         child: Column(
           children: [
@@ -77,22 +79,22 @@ class _IntroWalkthroughScreenState extends State<IntroWalkthroughScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.08),
+                      color: (isDark ? AppColors.primaryLight : AppColors.primary).withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       'خطوة ${_currentPage + 1} من ${_pages.length}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
+                        color: isDark ? AppColors.primaryLight : AppColors.primary,
                       ),
                     ),
                   ),
                   TextButton(
                     onPressed: _finishIntro,
                     style: TextButton.styleFrom(
-                      foregroundColor: AppColors.textSecondary,
+                      foregroundColor: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
                     ),
                     child: const Text('تخطي', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
                   ),
@@ -150,11 +152,19 @@ class _IntroWalkthroughScreenState extends State<IntroWalkthroughScreen> {
                                   ),
                                 ],
                               ),
-                              child: Icon(
-                                page['icon'],
-                                size: 70,
-                                color: Colors.white,
-                              ),
+                              child: index == 0
+                                  ? ClipRRect(
+                                      borderRadius: BorderRadius.circular(36),
+                                      child: Image.asset(
+                                        'assets/images/app_icon.png',
+                                        fit: BoxFit.cover,
+                                      ),
+                                    )
+                                  : Icon(
+                                      page['icon'],
+                                      size: 70,
+                                      color: Colors.white,
+                                    ),
                             ),
                           ],
                         ),
@@ -187,7 +197,7 @@ class _IntroWalkthroughScreenState extends State<IntroWalkthroughScreen> {
                         Text(
                           page['description'],
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: AppColors.textSecondary,
+                                color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
                                 height: 1.6,
                                 fontSize: 14,
                               ),
@@ -218,8 +228,8 @@ class _IntroWalkthroughScreenState extends State<IntroWalkthroughScreen> {
                         width: _currentPage == index ? 32 : 8,
                         decoration: BoxDecoration(
                           color: _currentPage == index
-                              ? AppColors.primary
-                              : AppColors.border,
+                              ? (isDark ? AppColors.primaryLight : AppColors.primary)
+                              : (isDark ? AppColors.darkBorder : AppColors.border),
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),

@@ -31,7 +31,7 @@ class ThemeModeNotifier extends StateNotifier<ThemeMode> {
     final modeStr = storage.getThemeMode();
     if (modeStr == 'dark') return ThemeMode.dark;
     if (modeStr == 'light') return ThemeMode.light;
-    return ThemeMode.system;
+    return ThemeMode.light;
   }
 
   void setThemeMode(ThemeMode mode) {

@@ -15,6 +15,7 @@ import 'add_homework_screen.dart';
 import 'manage_comments_screen.dart';
 import 'manage_schedule_screen.dart';
 import 'manage_subjects/manage_subjects_screen.dart';
+import 'teacher_settings_screen.dart';
 
 // Real stats provider querying Supabase (strictly isolated by schoolId)
 final teacherStatsProvider = FutureProvider.autoDispose<Map<String, int>>((ref) async {
@@ -55,18 +56,18 @@ class TeacherDashboardScreen extends ConsumerWidget {
   void _showLogoutDialog(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogCtx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('تسجيل الخروج', style: TextStyle(fontWeight: FontWeight.bold)),
         content: const Text('هل أنت متأكد من تسجيل الخروج من لوحة التحكم؟'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogCtx),
             child: const Text('إلغاء'),
           ),
           ElevatedButton(
             onPressed: () async {
-              Navigator.pop(context);
+              Navigator.pop(dialogCtx);
 
               // 1. Clear teacher credentials in SharedPreferences
               try {
@@ -93,8 +94,7 @@ class TeacherDashboardScreen extends ConsumerWidget {
 
               // 5. Navigate immediately on the first click
               if (!context.mounted) return;
-              Navigator.pushAndRemoveUntil(
-                context,
+              Navigator.of(context).pushAndRemoveUntil(
                 MaterialPageRoute(builder: (_) => const OnboardingScreen()),
                 (route) => false,
               );
@@ -136,6 +136,14 @@ class TeacherDashboardScreen extends ConsumerWidget {
           ],
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: 'إعدادات الحساب والمظهر',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const TeacherSettingsScreen()),
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
             tooltip: 'تحديث ومزامنة البيانات',
@@ -384,6 +392,16 @@ class TeacherDashboardScreen extends ConsumerWidget {
                 subtitle: 'الرد على استفسارات الطلبة، أو حذف التعليقات والتبليغات',
                 gradient: const [Color(0xFFEC4899), Color(0xFFDB2777)],
                 onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ManageCommentsScreen())),
+              ),
+              const SizedBox(height: 12),
+
+              _buildActionTile(
+                context,
+                icon: Icons.settings_suggest_rounded,
+                title: 'إعدادات الحساب والمظهر والدعم',
+                subtitle: 'الوضع الليلي، فحص الإشعارات، ومعلومات التواصل مع المطور',
+                gradient: const [Color(0xFF6366F1), Color(0xFF4F46E5)],
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TeacherSettingsScreen())),
               ),
               const SizedBox(height: 12),
 

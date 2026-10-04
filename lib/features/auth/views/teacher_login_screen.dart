@@ -166,21 +166,23 @@ class _TeacherLoginScreenState extends ConsumerState<TeacherLoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? AppColors.darkBackground : Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: isDark ? AppColors.darkBackground : Colors.white,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'بوابة الأساتذة والإدارة',
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: AppColors.primary,
+            color: isDark ? AppColors.darkTextPrimary : AppColors.primary,
           ),
         ),
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.primary),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: isDark ? AppColors.darkTextPrimary : AppColors.primary),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -218,22 +220,22 @@ class _TeacherLoginScreenState extends ConsumerState<TeacherLoginScreen> {
                   ),
                   const SizedBox(height: 20),
 
-                  const Text(
+                  Text(
                     'تسجيل دخول الكادر التدريسي',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w900,
-                      color: AppColors.primary,
+                      color: isDark ? AppColors.primaryLight : AppColors.primary,
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
+                  Text(
                     'أدخل كود إعداديتك المهنية وبيانات حسابك لإدارة الأقسام والواجبات',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 13,
-                      color: AppColors.textSecondary,
+                      color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
                       height: 1.4,
                     ),
                   ),
@@ -250,21 +252,21 @@ class _TeacherLoginScreenState extends ConsumerState<TeacherLoginScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                       decoration: BoxDecoration(
-                        color: AppColors.goldSurface,
+                        color: isDark ? AppColors.darkSurface : AppColors.goldSurface,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: AppColors.borderGold, width: 1.2),
                       ),
-                      child: const Row(
+                      child: Row(
                         children: [
-                          Icon(Icons.touch_app_rounded, color: AppColors.goldDark, size: 18),
-                          SizedBox(width: 8),
+                          const Icon(Icons.touch_app_rounded, color: AppColors.goldDark, size: 18),
+                          const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               'تعبئة كود إعدادية كركوك المهنية (KIRKUK-VOC)',
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
-                                color: AppColors.goldDark,
+                                color: isDark ? AppColors.darkTextPrimary : AppColors.goldDark,
                               ),
                             ),
                           ),
@@ -275,12 +277,12 @@ class _TeacherLoginScreenState extends ConsumerState<TeacherLoginScreen> {
                   const SizedBox(height: 16),
 
                   // School Code
-                  const Text(
+                  Text(
                     'كود الإعدادية الخاص',
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
+                      color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -291,16 +293,16 @@ class _TeacherLoginScreenState extends ConsumerState<TeacherLoginScreen> {
                       prefixIcon: Padding(
                         padding: const EdgeInsets.all(8.0),
                         child: Material(
-                          color: AppColors.primary.withValues(alpha: 0.10),
+                          color: (isDark ? AppColors.primaryLight : AppColors.primary).withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(10),
                           child: InkWell(
                             borderRadius: BorderRadius.circular(10),
                             onTap: _scanSchoolQrCode,
-                            child: const Padding(
-                              padding: EdgeInsets.all(8.0),
+                            child: Padding(
+                              padding: const EdgeInsets.all(8.0),
                               child: Icon(
                                 Icons.qr_code_scanner_rounded,
-                                color: AppColors.primary,
+                                color: isDark ? AppColors.primaryLight : AppColors.primary,
                                 size: 22,
                               ),
                             ),
@@ -318,12 +320,12 @@ class _TeacherLoginScreenState extends ConsumerState<TeacherLoginScreen> {
                   const SizedBox(height: 16),
 
                   // Email
-                  const Text(
+                  Text(
                     'البريد الإلكتروني للتدريسي',
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
+                      color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -331,9 +333,9 @@ class _TeacherLoginScreenState extends ConsumerState<TeacherLoginScreen> {
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
                     textDirection: TextDirection.ltr,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       hintText: 'teacher@kirkuk-voc.edu',
-                      prefixIcon: Icon(Icons.email_outlined, color: AppColors.primary),
+                      prefixIcon: Icon(Icons.email_outlined, color: isDark ? AppColors.primaryLight : AppColors.primary),
                     ),
                     validator: (val) {
                       if (val == null || val.trim().isEmpty || !val.contains('@')) {
@@ -345,12 +347,12 @@ class _TeacherLoginScreenState extends ConsumerState<TeacherLoginScreen> {
                   const SizedBox(height: 16),
 
                   // Password
-                  const Text(
+                  Text(
                     'كلمة المرور',
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
+                      color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -360,7 +362,7 @@ class _TeacherLoginScreenState extends ConsumerState<TeacherLoginScreen> {
                     textDirection: TextDirection.ltr,
                     decoration: InputDecoration(
                       hintText: '••••••••',
-                      prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppColors.primary),
+                      prefixIcon: Icon(Icons.lock_outline_rounded, color: isDark ? AppColors.primaryLight : AppColors.primary),
                       suffixIcon: IconButton(
                         icon: Icon(
                           _obscurePassword ? Icons.visibility_off_rounded : Icons.visibility_rounded,
@@ -422,21 +424,21 @@ class _TeacherLoginScreenState extends ConsumerState<TeacherLoginScreen> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: AppColors.surfaceMuted,
+                      color: isDark ? AppColors.darkSurface : AppColors.surfaceMuted,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.border),
+                      border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.border),
                     ),
-                    child: const Row(
+                    child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(Icons.security_rounded, size: 18, color: AppColors.primaryLight),
-                        SizedBox(width: 8),
+                        const Icon(Icons.security_rounded, size: 18, color: AppColors.primaryLight),
+                        const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             'نظام تسجيل دخول مستقل ومخصص للتعليم الإعدادي والمهني، منفصل تماماً عن المنظومات العامة.',
                             style: TextStyle(
                               fontSize: 11,
-                              color: AppColors.textMuted,
+                              color: isDark ? AppColors.darkTextSecondary : AppColors.textMuted,
                               height: 1.4,
                             ),
                           ),
