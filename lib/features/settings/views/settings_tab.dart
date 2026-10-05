@@ -131,15 +131,8 @@ class SettingsTab extends ConsumerWidget {
     final localStorage = ref.watch(localStorageServiceProvider);
     final activeSchool = ref.watch(activeSchoolProvider).valueOrNull;
     final schoolName = activeSchool?.name ?? localStorage.getSchoolName() ?? 'المدرسة المسجلة';
-    final shortCode = activeSchool?.schoolCode ?? localStorage.getSchoolShortCode() ?? '';
     final gradeName = localStorage.getSelectedGradeName() ?? '';
-    final schoolCode = localStorage.getSchoolCode() ?? 'غير محدد';
     final currentDept = localStorage.getSelectedDepartment();
-    final displayCode = shortCode.isNotEmpty
-        ? shortCode
-        : ((schoolCode == AppConstants.defaultSchoolId || schoolCode == 'd581107e-2f01-4bd0-a89d-bf27f36a2574')
-            ? 'SCH-1'
-            : (schoolCode.length > 16 ? '${schoolCode.substring(0, 10)}...' : schoolCode));
 
     return Scaffold(
       appBar: AppBar(
@@ -205,37 +198,22 @@ class SettingsTab extends ConsumerWidget {
                             ),
                           ],
                           const SizedBox(height: 8),
-                          InkWell(
-                            onTap: () {
-                              Clipboard.setData(ClipboardData(text: displayCode));
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: const Text('تم نسخ كود المدرسة إلى الحافظة'),
-                                  behavior: SnackBarBehavior.floating,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.22),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.verified_rounded, size: 14, color: Colors.white),
+                                SizedBox(width: 6),
+                                Text(
+                                  'مدرسة مسجلة ومعتمدة ✓',
+                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
                                 ),
-                              );
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.22),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(Icons.copy_rounded, size: 14, color: Colors.white),
-                                  const SizedBox(width: 6),
-                                  Flexible(
-                                    child: Text(
-                                      'كود المدرسة: $displayCode',
-                                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                              ],
                             ),
                           ),
                         ],

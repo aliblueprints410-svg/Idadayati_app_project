@@ -168,7 +168,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'أدخل كود إعداديتك للدخول إلى الأقسام والمواد والواجبات',
+                      'أدخل كود مدرستك للدخول إلى المواد والواجبات',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
                           ),
@@ -176,66 +176,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     ),
                     const SizedBox(height: 28),
 
-                    // Quick Shortcut for Kirkuk Vocational
-                    InkWell(
-                      onTap: () {
-                        setState(() {
-                          _codeController.text = 'KIRKUK-VOC';
-                        });
-                        _submit();
-                      },
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: isDark ? AppColors.darkSurface : AppColors.goldSurface,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppColors.borderGold, width: 1.5),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: AppColors.gold.withValues(alpha: 0.15),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(Icons.flash_on_rounded, color: AppColors.gold, size: 20),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'دخول سريع تجريبي',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppColors.goldDark,
-                                    ),
-                                  ),
-                                  Text(
-                                    'إعدادية كركوك المهنية (KIRKUK-VOC)',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w700,
-                                      color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const Icon(Icons.arrow_back_ios_new_rounded, size: 14, color: AppColors.goldDark),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
                     // School Code Field Only
                     Text(
-                      'كود الإعدادية الخاص',
+                      'كود المدرسة الخاص',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
@@ -248,7 +191,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       textInputAction: TextInputAction.done,
                       onFieldSubmitted: (_) => _submit(),
                       decoration: InputDecoration(
-                        hintText: 'أدخل الكود (مثال: KIRKUK-VOC)',
+                        hintText: 'أدخل كود المدرسة الخاص بك',
                         prefixIcon: Padding(
                           padding: const EdgeInsets.all(8.0),
                           child: Material(
@@ -271,7 +214,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       ),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'يرجى إدخال كود الإعدادية';
+                          return 'يرجى إدخال كود المدرسة';
                         }
                         return null;
                       },
@@ -297,7 +240,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                           : const Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Text('دخول إلى إعداديتي', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                                Text('دخول إلى مدرستي', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                                 SizedBox(width: 8),
                                 Icon(Icons.arrow_back_rounded, size: 18),
                               ],
@@ -333,7 +276,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         );
                       },
                       icon: const Icon(Icons.shield_outlined, size: 20, color: AppColors.goldDark),
-                      label: const Text('بوابة الأساتذة وإدارة الإعدادية'),
+                      label: const Text('بوابة الأساتذة والإدارة'),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 15),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),

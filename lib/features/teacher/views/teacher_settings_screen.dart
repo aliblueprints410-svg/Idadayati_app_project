@@ -204,7 +204,6 @@ class _TeacherSettingsScreenState extends ConsumerState<TeacherSettingsScreen> {
     final localStorage = ref.watch(localStorageServiceProvider);
     final activeSchool = ref.watch(activeSchoolProvider).valueOrNull;
     final schoolName = activeSchool?.name ?? localStorage.getSchoolName() ?? 'إعدادية كركوك المهنية';
-    final shortCode = activeSchool?.schoolCode ?? localStorage.getSchoolShortCode() ?? 'KIRKUK-VOC';
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
@@ -281,9 +280,9 @@ class _TeacherSettingsScreenState extends ConsumerState<TeacherSettingsScreen> {
                               children: [
                                 const Icon(Icons.verified_rounded, size: 14, color: AppColors.goldLight),
                                 const SizedBox(width: 6),
-                                Text(
-                                  'كود المدرسة: $shortCode',
-                                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                                const Text(
+                                  'كادر تعليمي معتمد ✓',
+                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
                                 ),
                               ],
                             ),

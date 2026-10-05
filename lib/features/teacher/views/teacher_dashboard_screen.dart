@@ -113,7 +113,6 @@ class TeacherDashboardScreen extends ConsumerWidget {
     final localStorage = ref.watch(localStorageServiceProvider);
     final activeSchool = ref.watch(activeSchoolProvider).valueOrNull;
     final schoolName = activeSchool?.name ?? localStorage.getSchoolName() ?? '';
-    final schoolShortCode = activeSchool?.schoolCode ?? localStorage.getSchoolShortCode() ?? '';
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -125,7 +124,7 @@ class TeacherDashboardScreen extends ConsumerWidget {
             const Text('لوحة تحكم الكادر التعليمي', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
             if (schoolName.isNotEmpty)
               Text(
-                schoolShortCode.isNotEmpty ? '$schoolName ($schoolShortCode)' : schoolName,
+                schoolName,
                 style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
@@ -237,9 +236,7 @@ class TeacherDashboardScreen extends ConsumerWidget {
                                   const SizedBox(width: 5),
                                   Flexible(
                                     child: Text(
-                                      schoolShortCode.isNotEmpty
-                                          ? '$schoolName • الكود: $schoolShortCode'
-                                          : schoolName,
+                                      schoolName,
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontSize: 11.5,

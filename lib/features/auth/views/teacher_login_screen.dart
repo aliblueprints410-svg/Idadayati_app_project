@@ -70,7 +70,7 @@ class _TeacherLoginScreenState extends ConsumerState<TeacherLoginScreen> {
         final prefs = await SharedPreferences.getInstance();
         final savedEmail = prefs.getString('teacher_email');
         final savedPassword = prefs.getString('teacher_password');
-        final savedSchoolCode = prefs.getString('teacher_school_code') ?? 'KIRKUK-VOC';
+        final savedSchoolCode = prefs.getString('teacher_school_code') ?? '';
 
         if (savedEmail != null && savedPassword != null) {
           _schoolCodeController.text = savedSchoolCode;
@@ -231,7 +231,7 @@ class _TeacherLoginScreenState extends ConsumerState<TeacherLoginScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'أدخل كود إعداديتك المهنية وبيانات حسابك لإدارة الأقسام والواجبات',
+                    'أدخل كود مدرستك وبيانات حسابك لإدارة المواد والواجبات',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 13,
@@ -241,44 +241,9 @@ class _TeacherLoginScreenState extends ConsumerState<TeacherLoginScreen> {
                   ),
                   const SizedBox(height: 24),
 
-                  // Quick fill shortcut for Kirkuk Vocational
-                  InkWell(
-                    onTap: () {
-                      setState(() {
-                        _schoolCodeController.text = 'KIRKUK-VOC';
-                      });
-                    },
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: isDark ? AppColors.darkSurface : AppColors.goldSurface,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.borderGold, width: 1.2),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.touch_app_rounded, color: AppColors.goldDark, size: 18),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'تعبئة كود إعدادية كركوك المهنية (KIRKUK-VOC)',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: isDark ? AppColors.darkTextPrimary : AppColors.goldDark,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
                   // School Code
                   Text(
-                    'كود الإعدادية الخاص',
+                    'كود المدرسة الخاص',
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
@@ -289,7 +254,7 @@ class _TeacherLoginScreenState extends ConsumerState<TeacherLoginScreen> {
                   TextFormField(
                     controller: _schoolCodeController,
                     decoration: InputDecoration(
-                      hintText: 'مثال: KIRKUK-VOC',
+                      hintText: 'أدخل كود المدرسة الخاص بك',
                       prefixIcon: Padding(
                         padding: const EdgeInsets.all(8.0),
                         child: Material(
@@ -312,7 +277,7 @@ class _TeacherLoginScreenState extends ConsumerState<TeacherLoginScreen> {
                     ),
                     validator: (val) {
                       if (val == null || val.trim().isEmpty) {
-                        return 'يرجى إدخال كود الإعدادية الخاص بك';
+                        return 'يرجى إدخال كود المدرسة الخاص بك';
                       }
                       return null;
                     },
@@ -334,7 +299,7 @@ class _TeacherLoginScreenState extends ConsumerState<TeacherLoginScreen> {
                     keyboardType: TextInputType.emailAddress,
                     textDirection: TextDirection.ltr,
                     decoration: InputDecoration(
-                      hintText: 'teacher@kirkuk-voc.edu',
+                      hintText: 'أدخل البريد الإلكتروني',
                       prefixIcon: Icon(Icons.email_outlined, color: isDark ? AppColors.primaryLight : AppColors.primary),
                     ),
                     validator: (val) {
